@@ -73,13 +73,20 @@ public:
 	// 현재 추적하고 있는 방향입니다. 이동 로직에서 사용합니다.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Movement|Lanes")
 	ETrackDirection CurrentTrackDirection = ETrackDirection::North;
-
 	// 현재 체력을 반환하는 Public API 함수입니다.
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetHealth(){ return HealthComp->RetHealth(); }
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetMaxHealth(){ return HealthComp->RetMaxHealth(); }
+
+	UPROPERTY(BlueprintReadWrite, Category = "Effect")
+	bool bIsInvincible = false;
+
+	// --- 아이템 관련 속성 ---
+
+	UPROPERTY()
+	float SpeedBonus = 0.f;
 
 	// 회전 타일을 만났을 때 강제 회전
 	void ExecuteForceTurn(const FTransform& PlaneOrigin, const ETrackDirection TileEndDirection);
@@ -89,6 +96,7 @@ public:
 
 	// 오버래핑 이벤트 발생시 Item에 의해 출력
 	void ItemActivated(EItemEffectTypes ItemTypes);
+
 
 protected:
 	// --- 컴포넌트 관련 ---
@@ -159,7 +167,6 @@ protected:
 	void OnInputEscape(const FInputActionValue& Value);
 
 private:
-	
 
 	// 게임 난이도 값을 받아오기 위한 MRGameState의 포인터입니다.
 	UPROPERTY()
@@ -239,4 +246,5 @@ protected:
 public:
 	// 애니메이션 블루프린트에서 현재 상태를 직접 가져갈 수 있도록 public 함수를 만듭니다.
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
 };
