@@ -520,8 +520,9 @@ void AMRPlayerCharacter::GetDamaged(float DamageAmount)
 
 	if (HealthComp)
 	{
-	// Implement damage logic here
-	HealthComp->GetDamage(DamageAmount);
+		// Implement damage logic here
+		HealthComp->GetDamage(DamageAmount);
+	}
 
 	if (bIsInvincible)
 	{
