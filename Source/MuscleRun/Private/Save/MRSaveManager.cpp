@@ -57,3 +57,18 @@ bool UMRSaveManager::UpdateHighScore(int32 NewScore)
 	// 안 했다면 false 반환
 	return false;
 }
+
+float UMRSaveManager::GetVolume() const
+{
+	return CurrentSaveGame ? CurrentSaveGame->MasterVolume : 0;
+}
+
+bool UMRSaveManager::UpdateVolume(float NewVolume) const
+{
+	if (CurrentSaveGame)
+	{
+		CurrentSaveGame->MasterVolume = NewVolume;
+		return true;
+	}
+	return false;
+}

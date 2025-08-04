@@ -152,6 +152,7 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 		GetCharacterMovement()->MaxWalkSpeed = BASE_SPEED_MAX * NewMultiplier;
 		GetCharacterMovement()->GravityScale = BASE_GRAVITY_SCALE * NewMultiplier * NewMultiplier;
 		GetCharacterMovement()->JumpZVelocity = BASE_JUMP_VELOCITY * NewMultiplier;
+		GetCharacterMovement()->MaxAcceleration = BASE_MAX_ACCELERATION * NewMultiplier;
 	}
 
 	// 슬라이딩 로직
@@ -184,6 +185,9 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 		if (TurnAlpha >= 1.0f)
 		{
 			bIsTurningNow = false;
+
+			FVector NewForwardVector = GetActorForwardVector();
+			GetCharacterMovement()->Velocity = NewForwardVector * ForwardSpeedBeforeTurn;
 		}
 
 		// 자동 회전 중에는 아래의 일반 이동 로직을 실행하지 않고 즉시 종료한다.
@@ -325,6 +329,9 @@ void AMRPlayerCharacter::ExecuteForceTurn(const FTransform& AlignmentTransform, 
 
 	TurnAlpha = 0.0f;
 	TurnStartTransform = GetActorTransform();
+
+	ForwardSpeedBeforeTurn = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
+
 
 	// 목표 위치 계산 (Z축 높이는 현재 높이 유지)
 	const FVector TargetXYLocation = AlignmentTransform.GetLocation();
