@@ -62,6 +62,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetHealth(){ return HealthComp->RetHealth(); }
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetMaxHealth(){ return HealthComp->RetMaxHealth(); }
+
 	// 회전 타일을 만났을 때 강제 회전
 	void ExecuteForceTurn(const FTransform& PlaneOrigin, const ETrackDirection TileEndDirection);
 
