@@ -33,4 +33,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstruct")
 	float KnockbackStrength = 700.0f;
+
+	// 💥 부서질 때 재생할 파티클 이펙트입니다.
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	class UParticleSystem* BreakEffectVFX;
+
+	// 🔊 부서질 때 재생할 사운드 이펙트입니다.
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	class USoundBase* BreakEffectSFX;
 };

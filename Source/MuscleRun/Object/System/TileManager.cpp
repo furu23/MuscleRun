@@ -132,7 +132,7 @@ void ATileManager::SpawnTile()
 		return;
 	}
 
-	ETileType TypeToSpawn = ETileType::TurnLeft; // 추후 로직 구현 DecideNextTileType()
+	ETileType TypeToSpawn = ETileType::Straight; // 추후 로직 구현 DecideNextTileType()
 	TSubclassOf<AMRTile>* FoundClassPtr = TileClassMap.Find(TypeToSpawn);
 
 	if (ensure(FoundClassPtr && *FoundClassPtr))
