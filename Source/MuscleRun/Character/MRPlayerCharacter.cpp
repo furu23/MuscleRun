@@ -105,7 +105,11 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 	{
 		double NewMultiplier = CachedGameState->GetGameSpeedMultiplier();
 
-		GetCharacterMovement()->MaxWalkSpeed = BASE_SPEED_MAX * NewMultiplier;
+		//if (b~~~)
+		GetCharacterMovement()->MaxWalkSpeed = (BASE_SPEED_MAX + SpeedBonus) * NewMultiplier;
+
+		//GetCharacterMovement()->MaxWalkSpeed = BASE_SPEED_MAX * NewMultiplier + 300.f;
+
 		GetCharacterMovement()->GravityScale = BASE_GRAVITY_SCALE * NewMultiplier * NewMultiplier;
 		GetCharacterMovement()->JumpZVelocity = BASE_JUMP_VELOCITY * NewMultiplier;
 	}
@@ -374,6 +378,12 @@ void AMRPlayerCharacter::GetDamaged(float DamageAmount)
 {
 	// Implement damage logic here
 	HealthComp->GetDamage(DamageAmount);
+
+	if (bIsInvincible)
+	{
+		// 무적 상태이므로 피해 무시
+		return;
+	}
 }
 
 void AMRPlayerCharacter::ItemActivated(EItemEffectTypes ItemTypes)
