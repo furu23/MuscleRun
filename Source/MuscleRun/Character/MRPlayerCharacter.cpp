@@ -168,6 +168,28 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 	*/
 
 
+	if (bIsTurningNow)
+	{
+		// Alpha 값을 시간에 따라 0에서 1로 증가시킨다.
+		TurnAlpha += DeltaTime / TurnDuration;
+		TurnAlpha = FMath::Min(TurnAlpha, 1.0f);
+
+		// 시작 Transform과 끝 Transform 사이를 부드럽게 보간(Lerp/Slerp)한다.
+		const FVector NewLocation = FMath::Lerp(TurnStartTransform.GetLocation(), TurnEndTransform.GetLocation(), TurnAlpha);
+		const FQuat NewRotation = FQuat::Slerp(TurnStartTransform.GetRotation(), TurnEndTransform.GetRotation(), TurnAlpha);
+
+		SetActorLocationAndRotation(NewLocation, NewRotation);
+
+		// --- 4. 회전 완료 처리 ---
+		if (TurnAlpha >= 1.0f)
+		{
+			bIsTurningNow = false;
+		}
+
+		// 자동 회전 중에는 아래의 일반 이동 로직을 실행하지 않고 즉시 종료한다.
+		return;
+	}
+
 	// 방향을 정의하고, 현재 앞방향으로 이동합니다.
 	FVector ForwardDirection = FVector::ZeroVector;
 	switch (CurrentTrackDirection)
@@ -258,6 +280,7 @@ void AMRPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 // 점프를 오버라이드한 함수입니다. 점프 입력을 받고 버퍼링 시간을 잽니다.
 void AMRPlayerCharacter::Jump()
 {
+	if (bIsTurningNow) return;
 	if (CanJump())
 	{
 		Super::Jump();  // 물리적으로 점프
@@ -290,54 +313,52 @@ void AMRPlayerCharacter::Landed(const FHitResult& Hit)
 // 주의! 타일 매니저와의 종속 관계가 주어진 함수입니다. 수정이 정말 필요하다면 말해주세요.
 void AMRPlayerCharacter::ExecuteForceTurn(const FTransform& AlignmentTransform, ETrackDirection NewDirection)
 {
+	if (bIsTurningNow) return;
+
 	// 회전 시의 중앙값을 가짐에 따라 Center로 상태를 강제 고정합니다.
 	CurrentLane = ECharacterLane::Center;
 	TargetLane = ECharacterLane::Center;
-
-	// 캐릭터의 방향을 즉시 회전 방향으로 옮깁니다.
-	const FRotator NewRotation = AlignmentTransform.GetRotation().Rotator();
-	SetActorRotation(NewRotation);
-	// 컨트롤러의 회전도 함께 맞춰주는 것이 좋다.
-	if (AController* PC = GetController())
-	{
-		PC->SetControlRotation(NewRotation);
-	}
 
 	// 트랙 방향도 마저 업데이트합니다.
 	CurrentTrackDirection = NewDirection;
 	FVector CurrentLocation = GetActorLocation();
 
-	// 캐릭터의 속도 벡터와 방향 벡터를 가져와서 내적으로 밀려나는 현상을 방지합니다.
-	// 추후 부드러운 회전 로직 구현으로 대체합니다.
-	FVector CurrentVelocity = GetCharacterMovement()->Velocity;
+	TurnAlpha = 0.0f;
+	TurnStartTransform = GetActorTransform();
 
-	const FVector NewForwardVector = GetActorForwardVector();
-	const FVector NewRightVector = GetActorRightVector();
+	// 목표 위치 계산 (Z축 높이는 현재 높이 유지)
+	const FVector TargetXYLocation = AlignmentTransform.GetLocation();
+	FVector AlignedLocation;
 
-	FVector NewVelocity = FVector::DotProduct(CurrentVelocity, NewForwardVector) * NewForwardVector;
 
-	NewVelocity.Z = CurrentVelocity.Z;
-
-	GetCharacterMovement()->Velocity = NewVelocity;
-
-	// 고정 좌측 오프셋 값을 갱신합니다.
 	switch (NewDirection)
 	{
 	case ETrackDirection::North:
 	case ETrackDirection::South:
+		AlignedLocation = FVector(CurrentLocation.X, TargetXYLocation.Y, CurrentLocation.Z);
 		FixedLaneOffset = CurrentLocation.Y;
 		break;
 	case ETrackDirection::West:
 	case ETrackDirection::East:
+		AlignedLocation = FVector(TargetXYLocation.X, CurrentLocation.Y, CurrentLocation.Z);
 		FixedLaneOffset = CurrentLocation.X;
 		break;
 	default:
 		break;
 	}
 
+	// 목표 회전값 계산
+	const FRotator NewRotation = AlignmentTransform.GetRotation().Rotator();
+
+	TurnEndTransform = FTransform(NewRotation, AlignedLocation);
+
 	// 이동 오프셋 값은 초기화해서 이동 정보를 초기화합니다. (강제 중앙 정렬)
 	LaneSwitchEndLateralOffset = 0;
 	LaneSwitchStartLateralOffset = 0;
+
+	// 각종 상태 변화를 기록합니다.
+	bIsTurningNow = true;
+	bIsSwitchingLane = false;
 
 	UE_LOG(LogTemp, Log, TEXT("Control Axis Rotated. New direction: %s"), *UEnum::GetValueAsString(NewDirection));
 }
@@ -361,7 +382,7 @@ void AMRPlayerCharacter::OnInputEscape_Implementation(const FInputActionValue& V
 // 왼쪽 이동 함수입니다. 요청의 책임만 가지고 있습니다.
 void AMRPlayerCharacter::MoveLeft()
 {
-	if (bIsSwitchingLane) return;
+	if (bIsSwitchingLane || bIsTurningNow) return;
 	int32 NewLaneIndex = FMath::Max(0, static_cast<int32>(CurrentLane) - 1);
 	TargetLane = static_cast<ECharacterLane>(NewLaneIndex);
 	if (TargetLane != CurrentLane)
@@ -373,7 +394,7 @@ void AMRPlayerCharacter::MoveLeft()
 // 오른쪽 이동 함수입니다. 요청의 책임만 가지고 있습니다.
 void AMRPlayerCharacter::MoveRight()
 {
-	if (bIsSwitchingLane) return;
+	if (bIsSwitchingLane || bIsTurningNow) return;
 	int32 NewLaneIndex = FMath::Min(2, static_cast<int32>(CurrentLane) + 1);
 	TargetLane = static_cast<ECharacterLane>(NewLaneIndex);
 	if (TargetLane != CurrentLane)

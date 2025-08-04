@@ -152,17 +152,30 @@ private:
 	void StartLaneSwitch();
 
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Lanes")
-	float LaneWidth = 150.0f;
+	float LaneWidth = 200.f;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Lanes")
 	float LaneSwitchDuration = 0.2f;
 
-	bool bIsSwitchingLane = false;
-	float LaneSwitchAlpha = 0.0f;
+	UPROPERTY(EditAnywhere, Category = "Player|Movement|Turn")
+	float TurnDuration = 0.5f;
 
-	const float BASE_SPEED_MAX = 600.f;
+	float LaneSwitchAlpha = 0.0f;
+	float TurnAlpha = 0.0f;
+
+	const float BASE_SPEED_MAX = 1000.f;
 	const float BASE_JUMP_VELOCITY = 700.f;
 	const float BASE_GRAVITY_SCALE = 2.f;
+
+	bool bIsSwitchingLane = false;
+	bool bIsTurningNow = false;
+
+	// --- 회전 관련 변수입니다 --- 
+	UPROPERTY(VisibleAnywhere, Category = "Player|Movement|Turn")
+	FTransform TurnEndTransform;
+
+	UPROPERTY(VisibleAnywhere, Category = "Player|Movement|Turn")
+	FTransform TurnStartTransform;
 
 
 	// --- 슬라이딩 기능 구현 함수 --
