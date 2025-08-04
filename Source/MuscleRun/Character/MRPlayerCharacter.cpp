@@ -392,6 +392,17 @@ void AMRPlayerCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	if (LandedEffectVFX)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), LandedEffectVFX, GetActorLocation(), GetActorRotation());
+	}
+
+	// 2. 착지 사운드(SFX)를 재생합니다.
+	if (LandedEffectSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, LandedEffectSFX, GetActorLocation());
+	}
+
 	if (bWantsToJump)
 	{
 		bWantsToJump = false;

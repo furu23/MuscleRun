@@ -58,6 +58,14 @@ protected:
 	UFUNCTION()
 	void OnDeath();
 
+	// 🦶 착지 시 재생할 파티클 이펙트입니다.
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	class UParticleSystem* LandedEffectVFX;
+
+	// 🔊 착지 시 재생할 사운드 이펙트입니다.
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	class USoundBase* LandedEffectSFX;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
