@@ -251,6 +251,7 @@ void AMRPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		Input->BindAction(IA_MTJump, ETriggerEvent::Completed, this, &AMRPlayerCharacter::StopJumping);
 		Input->BindAction(IA_Slide, ETriggerEvent::Triggered, this, &AMRPlayerCharacter::StartSlide);
 		Input->BindAction(IA_Slide, ETriggerEvent::Completed, this, &AMRPlayerCharacter::StopSlide);
+		Input->BindAction(IA_Escape, ETriggerEvent::Started, this, &AMRPlayerCharacter::OnInputEscape);
 	}
 }
 
@@ -350,6 +351,11 @@ void AMRPlayerCharacter::OnInputJump(const FInputActionValue& Value)
 	{
 		StopJumping();
 	}
+}
+
+void AMRPlayerCharacter::OnInputEscape_Implementation(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("This Text Should Not To LOG!, Cheack Escape IA Binding"));
 }
 
 // 왼쪽 이동 함수입니다. 요청의 책임만 가지고 있습니다.
