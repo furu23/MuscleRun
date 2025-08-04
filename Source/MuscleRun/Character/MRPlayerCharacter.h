@@ -93,9 +93,6 @@ protected:
 	class UInputAction* IA_Slide;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Input")
-	class UInputAction* IA_ToggleWidget;
-
-	UPROPERTY(EditAnywhere, Category = "Player|Input")
 	class UInputAction* IA_Escape;
 
 	// --- 논리적 레인 기반 이동 관련 함수 및 변수 ---
@@ -121,7 +118,11 @@ protected:
 	float FixedLaneOffset = 0.f;
 
 
+
 	void OnInputJump(const FInputActionValue& Value);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void OnInputEscape(const FInputActionValue& Value);
 
 private:
 	
