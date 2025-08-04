@@ -50,6 +50,10 @@ protected:
 		const class UDamageType* DamageType, class AController* InstigatedBy, 
 		AActor* DamageCauser);
 
+	// ⚰️ 죽었을 때 화면에 띄울 결과창 UI 위젯 클래스입니다.
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> ResultWidgetClass;
+
 	// ⚰️ 체력이 0이 되었을 때 HealthComponent로부터 호출될 함수입니다.
 	UFUNCTION()
 	void OnDeath();

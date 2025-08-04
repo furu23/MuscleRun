@@ -2,6 +2,7 @@
 
 
 #include "Character/MRPlayerCharacter.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFrameWork/SpringArmComponent.h"
@@ -197,6 +198,26 @@ void AMRPlayerCharacter::OnDeath()
 	if (SpringArm)
 	{
 		SpringArm->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	}
+
+	if (ResultWidgetClass)
+	{
+		// 플레이어 컨트롤러를 가져옵니다.
+		APlayerController* PC = GetController<APlayerController>();
+		if (PC)
+		{
+			// 위젯을 생성합니다.
+			UUserWidget* ResultWidget = CreateWidget<UUserWidget>(PC, ResultWidgetClass);
+			if (ResultWidget)
+			{
+				// 화면에 위젯을 추가합니다.
+				ResultWidget->AddToViewport();
+
+				// 마우스 커서를 보이게 하고, UI에만 입력이 가능하도록 모드를 변경합니다.
+				PC->bShowMouseCursor = true;
+				PC->SetInputMode(FInputModeUIOnly());
+			}
+		}
 	}
 
 	// 6. 약간의 딜레이 후 캐릭터 액터를 파괴합니다. (이펙트가 보일 시간 확보)
