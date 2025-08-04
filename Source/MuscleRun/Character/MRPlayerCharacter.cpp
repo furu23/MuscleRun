@@ -73,6 +73,17 @@ void AMRPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// HealthComponent가 유효한지 확인하고, OnHealthBecomeToZero 이벤트가 발생하면
+	// 이 클래스의 OnDeath 함수를 호출하도록 서로 연결(바인딩)합니다.
+	if (HealthComp)
+	{
+		HealthComp->OnHealthBecomeToZero.AddDynamic(this, &AMRPlayerCharacter::OnDeath);
+	}
+
+	// 이 액터(플레이어)가 데미지를 입는 이벤트(OnTakeAnyDamage)가 발생하면,
+	// HandleTakeDamage 함수를 호출하도록 연결(바인딩)합니다.
+	OnTakeAnyDamage.AddDynamic(this, &AMRPlayerCharacter::HandleTakeDamage);
+
 	// 기본 입력 초기화를 진행합니다.
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
@@ -137,6 +148,59 @@ void AMRPlayerCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, u
 	{
 		CharacterState = ECharacterState::ECS_Running;
 	}
+}
+
+void AMRPlayerCharacter::HandleTakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
+{
+	// GetDamaged 함수를 호출하여 HealthComponent에 데미지를 전달합니다.
+	GetDamaged(Damage);
+}
+
+void AMRPlayerCharacter::OnDeath()
+{
+	// 1. 죽음 이펙트(VFX)를 재생합니다.
+	if (DeathEffectVFX)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DeathEffectVFX, GetActorLocation(), GetActorRotation());
+	}
+
+	// 2. 죽음 사운드(SFX)를 재생합니다.
+	if (DeathEffectSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathEffectSFX, GetActorLocation());
+	}
+
+	// 3. 플레이어의 입력을 비활성화하여 더 이상 움직이지 못하게 합니다.
+	DisableInput(nullptr);
+
+	// 3. 캐릭터의 기본 충돌체(캡슐)의 기능을 끕니다.
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	// 4. 캐릭터의 이동 컴포넌트를 비활성화합니다.
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->StopMovementImmediately();
+		Movement->DisableMovement();
+	}
+
+	// 5. 스켈레탈 메시에 물리 시뮬레이션을 적용하여 래그돌로 만듭니다.
+	if (USkeletalMeshComponent* SkelMesh = GetMesh())
+	{
+		SkelMesh->SetCollisionProfileName(TEXT("Ragdoll")); // 래그돌용 콜리전 프로파일로 변경
+		SkelMesh->SetSimulatePhysics(true); // 물리 시뮬레이션 활성화!
+	}
+
+	// 6. 카메라를 분리하여 래그돌이 된 캐릭터를 계속 비추게 합니다.
+	if (SpringArm)
+	{
+		SpringArm->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	}
+
+	// 6. 약간의 딜레이 후 캐릭터 액터를 파괴합니다. (이펙트가 보일 시간 확보)
+	SetLifeSpan(200.0f);
 }
 
 // Called every frame
@@ -422,8 +486,10 @@ void AMRPlayerCharacter::ClearJumpBuffer()
 
 void AMRPlayerCharacter::GetDamaged(float DamageAmount)
 {
-	// Implement damage logic here
-	HealthComp->GetDamage(DamageAmount);
+	if (HealthComp)
+	{
+		HealthComp->GetDamage(DamageAmount);
+	}
 }
 
 void AMRPlayerCharacter::ItemActivated(EItemEffectTypes ItemTypes)
