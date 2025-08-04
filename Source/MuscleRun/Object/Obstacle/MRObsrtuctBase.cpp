@@ -6,6 +6,10 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/DamageType.h"
+// UParticleSystem과 USoundBase를 사용하기 위해 헤더를 추가할 수 있습니다.
+#include "Particles/ParticleSystem.h"
+#include "Sound/SoundBase.h"
+
 
 AMRObsrtuctBase::AMRObsrtuctBase()
 {
@@ -37,15 +41,31 @@ void AMRObsrtuctBase::OnObstacleHit(UPrimitiveComponent* HitComp, AActor* OtherA
 	}
 
 	// ✨ 부딪힌 대상이 플레이어 캐릭터라면, 데미지와 넉백을 적용합니다.
-	ACharacter* PlayerCharacter = Cast<ACharacter>(OtherActor);
-	if (PlayerCharacter)
+	ACharacter* MRPlayerCharacter = Cast<ACharacter>(OtherActor);
+	if (MRPlayerCharacter)
 	{
-		UGameplayStatics::ApplyDamage(PlayerCharacter, Damage, UGameplayStatics::GetPlayerController(this, 0), this, UDamageType::StaticClass());
+		UGameplayStatics::ApplyDamage(MRPlayerCharacter, Damage, UGameplayStatics::GetPlayerController(this, 0), this, UDamageType::StaticClass());
 
 		FVector KnockbackDirection = -Hit.ImpactNormal;
 		KnockbackDirection.Z = 0.5f;
 		KnockbackDirection.Normalize();
 
-		PlayerCharacter->LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
+		MRPlayerCharacter->LaunchCharacter(KnockbackDirection * KnockbackStrength, true, true);
+
+		// 부서지는 이펙트(VFX)를 재생합니다. (변수에 이펙트가 할당된 경우에만)
+		if (BreakEffectVFX)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BreakEffectVFX, GetActorLocation(), GetActorRotation());
+		}
+
+		// 부서지는 사운드(SFX)를 재생합니다. (변수에 사운드가 할당된 경우에만)
+		if (BreakEffectSFX)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, BreakEffectSFX, GetActorLocation());
+		}
+
+		//  모든 효과를 재생한 뒤, 장애물 액터 자신을 파괴하여 맵에서 제거합니다.
+		Destroy();
 	}
+
 }
