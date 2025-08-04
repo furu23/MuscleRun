@@ -25,11 +25,11 @@ void UMRItemEffectManagerComponent::BeginPlay()
 // 각각의 효과를 구현하는 함수입니다.
 void UMRItemEffectManagerComponent::ApplyEffect(EItemEffectTypes ItemTypes)
 {
+	UE_LOG(LogTemp, Error, TEXT("%s: %d"), *GetOwner()->GetFName().ToString(), static_cast<int32>(ItemTypes))
 	switch (ItemTypes)
 	{
 		case EItemEffectTypes::Score:
 		{
-			// 여기 기본 아이템의 효과를 적용합니다. GameMode의 Score를 올려주는 로직을 작성해보세요!
 			TempScore += 10;
 			UE_LOG(LogTemp, Log, TEXT("Score +10! 현재 점수: %d"), TempScore);
 
@@ -37,20 +37,36 @@ void UMRItemEffectManagerComponent::ApplyEffect(EItemEffectTypes ItemTypes)
 			CachedGameState->AddScore(10);
 			break;
 		}
-	
+		
 		case EItemEffectTypes::Faster:
 		{
 			ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner());
-			if (PlayerCharacter)
+			if (ensure(PlayerCharacter))
 			{
-			UCharacterMovementComponent* MoveComp = PlayerCharacter->GetCharacterMovement();
-			MoveComp->MaxWalkSpeed += 300.f;
-			UE_LOG(LogTemp, Log, TEXT("속도증가! 현재 속도: %.1f"), MoveComp->MaxWalkSpeed);
+				AMRPlayerCharacter* MRChar = Cast<AMRPlayerCharacter>(PlayerCharacter);
+				if (ensure(MRChar))
+				{
+					const float BonusSpeed = 300.f;
+					MRChar->SpeedBonus += BonusSpeed;
+
+					UE_LOG(LogTemp, Log, TEXT("속도 증가! Bonus: %.1f"), MRChar->SpeedBonus);
+
+					// 일정 시간 후 다시 감소
+					FTimerHandle TimerHandle;
+					FTimerDelegate TimerDel = FTimerDelegate::CreateLambda([MRChar, BonusSpeed]()
+						{
+							MRChar->SpeedBonus -= BonusSpeed;
+							MRChar->SpeedBonus = FMath::Max(0.f, MRChar->SpeedBonus); // 음수 방지
+							UE_LOG(LogTemp, Log, TEXT("속도 복원됨! 현재 Bonus: %.1f"), MRChar->SpeedBonus);
+						});
+
+					MRChar->GetWorldTimerManager().SetTimer(TimerHandle, TimerDel, 5.f, false);
+				}
 			}
 			break;
 		}
 	
-		/*case  EItemEffectTypes::NoDie:
+		case  EItemEffectTypes::NoDie:
 		{
 			ACharacter* PlayerCharacter = Cast<ACharacter>(GetOwner());
 			if (PlayerCharacter)
@@ -70,25 +86,8 @@ void UMRItemEffectManagerComponent::ApplyEffect(EItemEffectTypes ItemTypes)
 				}
 			}
 			break;
-		}*/
+		}
 		default:
 		break;
 	}	
 }
-
-/*무적은 캐릭터에  MRPlayerCharacter.h
-public:
-	UPROPERTY(BlueprintReadWrite, Category = "Effect")
-	bool bIsInvincible = false;
-	
-	소스에
-	void AMRPlayerCharacter::TakeDamage(float Damage)
-	{
-		if (bIsInvincible)
-		{
-			// 무적 상태이므로 피해 무시
-			return;
-		}
-
-		// 일반적인 피해 처리...
-	}*/

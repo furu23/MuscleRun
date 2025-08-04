@@ -205,7 +205,7 @@ void ATileManager::DestroyOldestTileGroup()
 	}
 }
 
-// Spawn Location Component 가져오고 순회해서 그 값들을 통해 오브젝트들을 생성하는 과정입니다.
+// Spawn Location Component들을 가져오고 순회해서 그 값들을 통해 오브젝트들을 생성하는 과정입니다.
 void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors)
 {
 	if (!TargetTile) return;

@@ -14,13 +14,15 @@ class USceneComponent;
 AItemBaseActor::AItemBaseActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	USceneComponent* RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComp"));
 	SetRootComponent(RootScene);
   
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	SetRootComponent(MeshComp);
+
+	MeshComp->SetMobility(EComponentMobility::Movable);
 
 	TriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
 	TriggerVolume->SetupAttachment(RootComponent);
@@ -36,6 +38,24 @@ void AItemBaseActor::BeginPlay()
 
 	// 여기서 TriggerVolume의 오버래핑 이벤트를 바인딩!
 	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AItemBaseActor::OnOverlapBegin);
+}
+
+void AItemBaseActor::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 회전 속도 (도/초 단위 -> 라디안/초)
+	float RotationSpeed = 120.0f; // 초당 30도
+
+	// 회전 축 설정 ( 기울어진 축 예시: x=1, y=1, z=0)
+	FVector TiltedAxis(0.f, 0.f, 1.f);
+	TiltedAxis.Normalize(); // 정규화
+
+	// 쿼티리언으로 회전 계산
+	FQuat RotationQuat = FQuat(TiltedAxis, FMath::DegreesToRadians(RotationSpeed * DeltaTime));
+
+	// 현재 회전에 회전 덧붙이기
+	MeshComp->AddLocalRotation(RotationQuat);
 }
 
 void AItemBaseActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

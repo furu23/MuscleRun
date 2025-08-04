@@ -50,6 +50,10 @@ protected:
 		const class UDamageType* DamageType, class AController* InstigatedBy, 
 		AActor* DamageCauser);
 
+	// ⚰️ 죽었을 때 화면에 띄울 결과창 UI 위젯 클래스입니다.
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> ResultWidgetClass;
+
 	// ⚰️ 체력이 0이 되었을 때 HealthComponent로부터 호출될 함수입니다.
 	UFUNCTION()
 	void OnDeath();
@@ -73,10 +77,20 @@ public:
 	// 현재 추적하고 있는 방향입니다. 이동 로직에서 사용합니다.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Movement|Lanes")
 	ETrackDirection CurrentTrackDirection = ETrackDirection::North;
-
 	// 현재 체력을 반환하는 Public API 함수입니다.
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetHealth(){ return HealthComp->RetHealth(); }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetMaxHealth(){ return HealthComp->RetMaxHealth(); }
+
+	UPROPERTY(BlueprintReadWrite, Category = "Effect")
+	bool bIsInvincible = false;
+
+	// --- 아이템 관련 속성 ---
+
+	UPROPERTY()
+	float SpeedBonus = 0.f;
 
 	// 회전 타일을 만났을 때 강제 회전
 	void ExecuteForceTurn(const FTransform& PlaneOrigin, const ETrackDirection TileEndDirection);
@@ -86,6 +100,7 @@ public:
 
 	// 오버래핑 이벤트 발생시 Item에 의해 출력
 	void ItemActivated(EItemEffectTypes ItemTypes);
+
 
 protected:
 	// --- 컴포넌트 관련 ---
@@ -124,9 +139,6 @@ protected:
 	class UInputAction* IA_Slide;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Input")
-	class UInputAction* IA_ToggleWidget;
-
-	UPROPERTY(EditAnywhere, Category = "Player|Input")
 	class UInputAction* IA_Escape;
 
 	// --- 논리적 레인 기반 이동 관련 함수 및 변수 ---
@@ -152,10 +164,13 @@ protected:
 	float FixedLaneOffset = 0.f;
 
 
+
 	void OnInputJump(const FInputActionValue& Value);
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void OnInputEscape(const FInputActionValue& Value);
+
 private:
-	
 
 	// 게임 난이도 값을 받아오기 위한 MRGameState의 포인터입니다.
 	UPROPERTY()
@@ -167,17 +182,30 @@ private:
 	void StartLaneSwitch();
 
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Lanes")
-	float LaneWidth = 150.0f;
+	float LaneWidth = 200.f;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Lanes")
 	float LaneSwitchDuration = 0.2f;
 
-	bool bIsSwitchingLane = false;
-	float LaneSwitchAlpha = 0.0f;
+	UPROPERTY(EditAnywhere, Category = "Player|Movement|Turn")
+	float TurnDuration = 0.5f;
 
-	const float BASE_SPEED_MAX = 600.f;
+	float LaneSwitchAlpha = 0.0f;
+	float TurnAlpha = 0.0f;
+
+	const float BASE_SPEED_MAX = 1000.f;
 	const float BASE_JUMP_VELOCITY = 700.f;
 	const float BASE_GRAVITY_SCALE = 2.f;
+
+	bool bIsSwitchingLane = false;
+	bool bIsTurningNow = false;
+
+	// --- 회전 관련 변수입니다 --- 
+	UPROPERTY(VisibleAnywhere, Category = "Player|Movement|Turn")
+	FTransform TurnEndTransform;
+
+	UPROPERTY(VisibleAnywhere, Category = "Player|Movement|Turn")
+	FTransform TurnStartTransform;
 
 
 	// --- 슬라이딩 기능 구현 함수 --
@@ -222,4 +250,5 @@ protected:
 public:
 	// 애니메이션 블루프린트에서 현재 상태를 직접 가져갈 수 있도록 public 함수를 만듭니다.
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+
 };
