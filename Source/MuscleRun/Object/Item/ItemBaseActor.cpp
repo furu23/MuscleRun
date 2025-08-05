@@ -23,6 +23,7 @@ AItemBaseActor::AItemBaseActor()
 	SetRootComponent(MeshComp);
 
 	MeshComp->SetMobility(EComponentMobility::Movable);
+	SetActorRotation(FRotator(0.f, 20.f, 0.f));
 
 	TriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
 	TriggerVolume->SetupAttachment(RootComponent);
