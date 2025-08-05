@@ -74,6 +74,9 @@ void AMRPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 게임 시작 시 상태를 '달리기'로 강제 초기화하여 이전 상태에 갇히는 문제를 방지합니다.
+	CharacterState = ECharacterState::ECS_Running;
+
 	// HealthComponent가 유효한지 확인하고, OnHealthBecomeToZero 이벤트가 발생하면
 	// 이 클래스의 OnDeath 함수를 호출하도록 서로 연결(바인딩)합니다.
 	if (HealthComp)
@@ -100,7 +103,7 @@ void AMRPlayerCharacter::BeginPlay()
 	GetWorld()->GetSubsystem<UMRUIManager>()->ToggleDebugWidget();
 
 	// 캡슐 높이 저장
-	DefualtCapsuleHalfSize = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	DefaultCapsuleHalfSize = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
 
 	// 타일 매니저와의 종속관계로 인해, Tick()을 항상 타일 매니저 뒤로 실행합니다.
 	if (ATileManager* TileManager = Cast<ATileManager>(UGameplayStatics::GetActorOfClass(GetWorld(), ATileManager::StaticClass())))
@@ -111,26 +114,10 @@ void AMRPlayerCharacter::BeginPlay()
 	}
 }
 
-void AMRPlayerCharacter::Slide()
+void AMRPlayerCharacter::EndSlideCooldown()
 {
-	// 땅에 있을 때만 슬라이딩 가능
-	if (GetCharacterMovement()->IsMovingOnGround())
-	{
-		CharacterState = ECharacterState::ECS_Sliding;
-		// 여기에 실제 슬라이딩 로직 추가 (예: 콜리전 크기 변경, 속도 변경 등)
-		// 디버그 메시지 추가
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("SLIDING STATE"));
-	}
-}
-
-void AMRPlayerCharacter::StopSliding()
-{
-	// 현재 슬라이딩 상태일 때만 달리기 상태로 변경
-	if (CharacterState == ECharacterState::ECS_Sliding)
-	{
-		CharacterState = ECharacterState::ECS_Running;
-		// 슬라이딩 종료 로직 추가 (예: 콜리전 크기 복구 등)
-	}
+	// 쿨다운을 해제하는 새로운 함수
+	bIsOnSlideCooldown = false;
 }
 
 void AMRPlayerCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -343,6 +330,62 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 			}
 			SetActorLocation(NewLocation);
 		}
+
+		// --- 여기가 새로운 "레인 절대 수호" 로직 (개선 버전) ---
+	// 레인을 바꾸는 중이 아닐 때만 이 로직을 실행하여, 캐릭터가 레인을 벗어나는 것을 방지합니다.
+		if (!bIsSwitchingLane)
+		{
+			// 1. 현재 레인에 맞는 목표 옆 방향 오프셋을 계산합니다.
+			const int32 LogicalLaneIndex = static_cast<int32>(CurrentLane) - 1; // Center(1)->0, Left(0)->-1, Right(2)->1
+			const float TargetLateralOffset = LogicalLaneIndex * LaneWidth;
+
+			FVector CorrectedLocation = GetActorLocation();
+			bool bNeedsCorrection = false;
+
+			// 2. 현재 트랙 방향에 따라 목표 위치를 설정하고, 보정이 필요한지 확인합니다.
+			//    FMath::IsNearlyEqual의 허용 오차(Tolerance)를 1.0f 정도로 주어 불필요한 수정을 방지합니다.
+			switch (CurrentTrackDirection)
+			{
+			case ETrackDirection::North:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset + TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.Y = FixedLaneOffset + TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			case ETrackDirection::South:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset - TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.Y = FixedLaneOffset - TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			case ETrackDirection::East:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset - TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.X = FixedLaneOffset - TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			case ETrackDirection::West:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset + TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.X = FixedLaneOffset + TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			}
+
+			// 3. 위치 보정이 필요하다고 판단되면, 물리 상태를 리셋하며 강제로 위치를 변경합니다.
+			if (bNeedsCorrection)
+			{
+				// SetActorLocation의 마지막 인자를 ETeleportType::TeleportPhysics로 설정합니다.
+				// 이렇게 하면 위치를 옮기면서 물리적 반작용으로 얻은 옆 방향 속도를 리셋하여,
+				// 계속해서 옆으로 밀려나는 현상을 방지하는 핵심적인 역할을 합니다.
+				SetActorLocation(CorrectedLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			}
+		}
+		// --- 여기까지가 새로운 로직 ---
 	}
 }
 
@@ -523,31 +566,77 @@ void AMRPlayerCharacter::StartLaneSwitch()
 }
 
 // 슬라이딩을 시작하는 함수입니다. 키를 떼거나, 시간이 지났을 때 자동으로 StopSlide()를 호출합니다.
+// AMRPlayerCharacter.cpp
+
+// AMRPlayerCharacter.cpp
+
+// AMRPlayerCharacter.cpp
+
+// StartSlide: 모든 문제 해결 로직이 적용된 최종 버전
 void AMRPlayerCharacter::StartSlide()
 {
-	if (GetCharacterMovement()->IsFalling())
+	// 슬라이드가 불가능한 상태이거나, 쿨다운 중일 때는 함수를 즉시 종료합니다.
+	if (bIsOnSlideCooldown ||
+		CharacterState == ECharacterState::ECS_Jumping ||
+		CharacterState == ECharacterState::ECS_Sliding ||
+		bIsTurningNow)
+	{
 		return;
+	}
 
-	// CurrentCharacterState = ECharacterState::Slide;
+	// 이전에 실행 중이던 타이머가 있다면 확실하게 제거합니다. (안전장치)
+	GetWorld()->GetTimerManager().ClearTimer(SlideTimeHandler);
+	GetWorld()->GetTimerManager().ClearTimer(SlideCooldownTimerHandle);
 
-	GetCapsuleComponent()->SetCapsuleHalfHeight(DefualtCapsuleHalfSize / 2.f);
+	ForwardSpeedBeforeSlide = GetVelocity().Size();
+	CharacterState = ECharacterState::ECS_Sliding;
+	Crouch();
 
-	// PlayAnimMontage(...)
+	if (SlideMontage)
+	{
+		PlayAnimMontage(SlideMontage, 0.7f);
+	}
 
-	GetWorld()->GetTimerManager().SetTimer(SlideTimeHandler, this, &AMRPlayerCharacter::StopSlide, SlideDuration, false);
+	// 정해진 시간 후 자동으로 일어서도록 StopSlide 함수를 예약합니다.
+	GetWorld()->GetTimerManager().SetTimer(SlideTimeHandler, this, 
+		&AMRPlayerCharacter::StopSlide, SlideDuration, false);
 }
 
+
+// StopSlide: 모든 문제 해결 로직이 적용된 최종 버전
 void AMRPlayerCharacter::StopSlide()
 {
-	GetCapsuleComponent()->SetCapsuleHalfHeight(DefualtCapsuleHalfSize);
+	// 현재 슬라이딩 상태가 아니면, 중복 호출 방지를 위해 함수를 즉시 종료합니다.
+	if (CharacterState != ECharacterState::ECS_Sliding)
+	{
+		return;
+	}
 
-	//StopAnimMontage(...);
+	// --- 여기가 핵심 수정 부분 ---
+	// 1. 슬라이드 재시작을 막기 위해 즉시 쿨다운 상태로 만듭니다.
+	bIsOnSlideCooldown = true;
 
+	// 2. 예약되어 있던 모든 관련 타이머를 깨끗하게 제거합니다.
 	GetWorld()->GetTimerManager().ClearTimer(SlideTimeHandler);
+
+	// 3. 아주 짧은 시간(0.2초) 후에 쿨다운을 해제하도록 새 타이머를 설정합니다.
+	GetWorld()->GetTimerManager().SetTimer(SlideCooldownTimerHandle, this, &AMRPlayerCharacter::EndSlideCooldown, 0.2f, false);
+	// --- 여기까지 ---
+
+	UnCrouch();
+	CharacterState = ECharacterState::ECS_Running;
+
+	const FVector ForwardVector = GetActorForwardVector();
+	GetCharacterMovement()->Velocity = ForwardVector * ForwardSpeedBeforeSlide;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_Stop(0.0f, SlideMontage);
+	}
 }
 
 // 점프 버퍼링을 끝내는 함수입니다.
-void AMRPlayerCharacter::ClearJumpBuffer()
+	void AMRPlayerCharacter::ClearJumpBuffer()
 {
 	bWantsToJump = false;
 }
