@@ -192,11 +192,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Lanes")
 	float LaneWidth = 200.f;
 
+	float ForwardSpeedBeforeTurn;
+
+
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Lanes")
 	float LaneSwitchDuration = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category = "Player|Movement|Turn")
-	float TurnDuration = 0.5f;
+	float TurnDuration = 0.1f;
 
 	float LaneSwitchAlpha = 0.0f;
 	float TurnAlpha = 0.0f;
@@ -204,6 +207,7 @@ private:
 	const float BASE_SPEED_MAX = 1000.f;
 	const float BASE_JUMP_VELOCITY = 700.f;
 	const float BASE_GRAVITY_SCALE = 2.f;
+	const float BASE_MAX_ACCELERATION = 2048.0f;
 
 	bool bIsSwitchingLane = false;
 	bool bIsTurningNow = false;
