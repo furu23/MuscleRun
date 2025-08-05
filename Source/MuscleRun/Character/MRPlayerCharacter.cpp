@@ -234,11 +234,7 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 	{
 		double NewMultiplier = CachedGameState->GetGameSpeedMultiplier();
 
-		//if (b~~~)
 		GetCharacterMovement()->MaxWalkSpeed = (BASE_SPEED_MAX + SpeedBonus) * NewMultiplier;
-
-		//GetCharacterMovement()->MaxWalkSpeed = BASE_SPEED_MAX * NewMultiplier + 300.f;
-
 		GetCharacterMovement()->GravityScale = BASE_GRAVITY_SCALE * NewMultiplier * NewMultiplier;
 		GetCharacterMovement()->JumpZVelocity = BASE_JUMP_VELOCITY * NewMultiplier;
 		GetCharacterMovement()->MaxAcceleration = BASE_MAX_ACCELERATION * NewMultiplier;
@@ -270,7 +266,7 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 
 		SetActorLocationAndRotation(NewLocation, NewRotation);
 
-		// --- 4. 회전 완료 처리 ---
+		// 회전 완료 처리
 		if (TurnAlpha >= 1.0f)
 		{
 			bIsTurningNow = false;
@@ -292,6 +288,7 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 	case ETrackDirection::South: ForwardDirection = -FVector::ForwardVector; break; // -X
 	case ETrackDirection::West:  ForwardDirection = -FVector::RightVector;  break; // -Y
 	}
+
 	AddMovementInput(ForwardDirection, 1.0f);
 
 	// 레인을 변경하는 로직입니다. bIsSwitchingLane 참일때만 동작합니다.
@@ -373,6 +370,8 @@ void AMRPlayerCharacter::Jump()
 	if (CanJump())
 	{
 		Super::Jump();  // 물리적으로 점프
+		bWantsToJump = false;
+		GetWorld()->GetTimerManager().ClearTimer(JumpBufferTimerHandler);
 
 		if (JumpMontage)
 		{
@@ -382,6 +381,11 @@ void AMRPlayerCharacter::Jump()
 				AnimInstance->Montage_Play(JumpMontage, 1.0f);
 			}
 		}
+	}
+	else
+	{
+		bWantsToJump = true;
+		GetWorld()->GetTimerManager().SetTimer(JumpBufferTimerHandler, this, &AMRPlayerCharacter::ClearJumpBuffer, JumpBufferDuration, false);
 	}
 }
 
