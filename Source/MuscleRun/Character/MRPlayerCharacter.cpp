@@ -337,6 +337,62 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 			}
 			SetActorLocation(NewLocation);
 		}
+
+		// --- 여기가 새로운 "레인 절대 수호" 로직 (개선 버전) ---
+	// 레인을 바꾸는 중이 아닐 때만 이 로직을 실행하여, 캐릭터가 레인을 벗어나는 것을 방지합니다.
+		if (!bIsSwitchingLane)
+		{
+			// 1. 현재 레인에 맞는 목표 옆 방향 오프셋을 계산합니다.
+			const int32 LogicalLaneIndex = static_cast<int32>(CurrentLane) - 1; // Center(1)->0, Left(0)->-1, Right(2)->1
+			const float TargetLateralOffset = LogicalLaneIndex * LaneWidth;
+
+			FVector CorrectedLocation = GetActorLocation();
+			bool bNeedsCorrection = false;
+
+			// 2. 현재 트랙 방향에 따라 목표 위치를 설정하고, 보정이 필요한지 확인합니다.
+			//    FMath::IsNearlyEqual의 허용 오차(Tolerance)를 1.0f 정도로 주어 불필요한 수정을 방지합니다.
+			switch (CurrentTrackDirection)
+			{
+			case ETrackDirection::North:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset + TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.Y = FixedLaneOffset + TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			case ETrackDirection::South:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset - TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.Y = FixedLaneOffset - TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			case ETrackDirection::East:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset - TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.X = FixedLaneOffset - TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			case ETrackDirection::West:
+				if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset + TargetLateralOffset, 1.0f))
+				{
+					CorrectedLocation.X = FixedLaneOffset + TargetLateralOffset;
+					bNeedsCorrection = true;
+				}
+				break;
+			}
+
+			// 3. 위치 보정이 필요하다고 판단되면, 물리 상태를 리셋하며 강제로 위치를 변경합니다.
+			if (bNeedsCorrection)
+			{
+				// SetActorLocation의 마지막 인자를 ETeleportType::TeleportPhysics로 설정합니다.
+				// 이렇게 하면 위치를 옮기면서 물리적 반작용으로 얻은 옆 방향 속도를 리셋하여,
+				// 계속해서 옆으로 밀려나는 현상을 방지하는 핵심적인 역할을 합니다.
+				SetActorLocation(CorrectedLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			}
+		}
+		// --- 여기까지가 새로운 로직 ---
 	}
 }
 
