@@ -27,6 +27,7 @@ void ATileManager::BeginPlay()
 
 	// 시작 시 처음으로 타일을 생성할 Transform을 초기화해줍니다.
 	NextSpawnPointTransform = GetActorTransform();
+	NextSpawnPointTransform.SetLocation(NextSpawnPointTransform.GetLocation() - FVector(200.f, 0, 200.f));
 
 	// 설정값에 따라 미리 타일들을 스폰해둡니다.
 	for (int i = 0; i < NumInitialTiles; ++i)
