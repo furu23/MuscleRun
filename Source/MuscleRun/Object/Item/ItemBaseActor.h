@@ -36,6 +36,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Item")
 	class UStaticMeshComponent* MeshComp;
 
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	class UParticleSystemComponent* PickupEffectComp;
+
 	// 아이템 타입을 에디터에 넣어주세요.
 	UPROPERTY(EditAnywhere, Category = "Item")
 	EItemEffectTypes ItemType;
