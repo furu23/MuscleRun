@@ -45,7 +45,8 @@ void AMRObstacleConcrete::Tick(float DeltaTime)
 	}
 }
 
-void AMRObstacleConcrete::OnObstacleHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AMRObstacleConcrete::OnObstacleHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
 {
 	// ✨ 1. 부모 클래스의 OnObstacleHit 기능을 먼저 실행합니다 (플레이어에게 데미지/넉백).
 	Super::OnObstacleHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
