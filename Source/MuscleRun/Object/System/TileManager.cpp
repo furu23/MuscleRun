@@ -133,13 +133,18 @@ void ATileManager::SpawnTile()
 		return;
 	}
 
-	ETileType TypeToSpawn = ETileType::Straight; // 추후 로직 구현 DecideNextTileType()
-	TSubclassOf<AMRTile>* FoundClassPtr = TileClassMap.Find(TypeToSpawn);
 
-	if (ensure(FoundClassPtr && *FoundClassPtr))
+
+	ETileType TypeToSpawn = DecideNextTileGroup(); // 추후 로직 구현 DecideNextTileType()
+	FTileClassArray* FoundStructPtr = TileClassMap.Find(TypeToSpawn);
+
+
+	if (ensure(FoundStructPtr && FoundStructPtr->TileClasses.Num() > 0))
 	{
-		// 해당 DA 그룹에서 타일을 하나 가져옵니다.
-		TSubclassOf<AMRTile> ClassToSpawn = *FoundClassPtr;
+		const TArray<TSubclassOf<AMRTile>>& FoundClassesArray = FoundStructPtr->TileClasses;
+		int32 RandomIndex = FMath::RandRange(0, FoundClassesArray.Num() - 1);
+		TSubclassOf<AMRTile> ClassToSpawn = FoundClassesArray[RandomIndex];
+
 		AMRTile* NewTile = GetWorld()->SpawnActor<AMRTile>(ClassToSpawn, NextSpawnPointTransform);
 		if (ensure(NewTile))
 		{
@@ -230,4 +235,20 @@ void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AAc
 			}
 		}
 	}
+}
+
+ETileType ATileManager::DecideNextTileGroup()
+{
+	ETileType ReturnType;
+	if (NumOfPreviousStraightTile < 3)
+	{
+		ReturnType = ETileType::Straight;
+		++NumOfPreviousStraightTile;
+	}
+	else
+	{
+		FMath::RandBool() ? ReturnType = ETileType::TurnLeft : ReturnType = ETileType::TurnRight;
+		NumOfPreviousStraightTile = 0;
+	}
+	return ReturnType;
 }

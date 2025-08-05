@@ -308,20 +308,16 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 		// 현재 트랙 방향을 switch로 분기하여 고정 오프셋에 Lerp 값을 더합니다.
 		switch (CurrentTrackDirection)
 		{
-		case ETrackDirection::North:
-			NewLocation.Y = FixedLaneOffset + NewLateralOffset;
+		case ETrackDirection::North: // 전진축: +X, 측면축: Y
+		case ETrackDirection::South: // 전진축: -X, 측면축: Y
+			NewLocation.Y = FixedLaneOffset + ((CurrentTrackDirection == ETrackDirection::North) ? NewLateralOffset : -NewLateralOffset);
 			break;
-		case ETrackDirection::South:
-			NewLocation.Y = FixedLaneOffset - NewLateralOffset;
-			break;
-		case ETrackDirection::East:
-			NewLocation.X = FixedLaneOffset - NewLateralOffset;
-			break;
-		case ETrackDirection::West:
-			NewLocation.X = FixedLaneOffset + NewLateralOffset;
+		case ETrackDirection::East:  // 전진축: +Y, 측면축: X
+		case ETrackDirection::West:  // 전진축: -Y, 측면축: X
+			NewLocation.X = FixedLaneOffset + ((CurrentTrackDirection == ETrackDirection::West) ? NewLateralOffset : -NewLateralOffset);
 			break;
 		}
-		UE_LOG(LogTemp, Log, TEXT("Movement Is Here, NewLateral : %.2f, Current Start Offset : %.2f, Current End Offset : %.2f"), NewLateralOffset, LaneSwitchStartLateralOffset, LaneSwitchEndLateralOffset);
+		UE_LOG(LogTemp, Warning, TEXT("Movement Is Here, NewLateral : %.2f, Current Start Offset : %.2f, Current End Offset : %.2f"), NewLateralOffset, LaneSwitchStartLateralOffset, LaneSwitchEndLateralOffset);
 		SetActorLocation(NewLocation);
 
 		// 레인 변경 완료 시 넘었을지도 모르는 값을 보정해줍니다. (Min 함수 때문에 실행될 일은 매우 없습니다)
@@ -377,8 +373,6 @@ void AMRPlayerCharacter::Jump()
 	if (CanJump())
 	{
 		Super::Jump();  // 물리적으로 점프
-
-		UE_LOG(LogTemp, Warning, TEXT("JumpState"));
 
 		if (JumpMontage)
 		{
@@ -443,12 +437,12 @@ void AMRPlayerCharacter::ExecuteForceTurn(const FTransform& AlignmentTransform, 
 	case ETrackDirection::North:
 	case ETrackDirection::South:
 		AlignedLocation = FVector(CurrentLocation.X, TargetXYLocation.Y, CurrentLocation.Z);
-		FixedLaneOffset = CurrentLocation.Y;
+		FixedLaneOffset = AlignmentTransform.GetLocation().Y;
 		break;
 	case ETrackDirection::West:
 	case ETrackDirection::East:
 		AlignedLocation = FVector(TargetXYLocation.X, CurrentLocation.Y, CurrentLocation.Z);
-		FixedLaneOffset = CurrentLocation.X;
+		FixedLaneOffset = AlignmentTransform.GetLocation().X;
 		break;
 	default:
 		break;
@@ -467,7 +461,7 @@ void AMRPlayerCharacter::ExecuteForceTurn(const FTransform& AlignmentTransform, 
 	bIsTurningNow = true;
 	bIsSwitchingLane = false;
 
-	UE_LOG(LogTemp, Log, TEXT("Control Axis Rotated. New direction: %s"), *UEnum::GetValueAsString(NewDirection));
+	UE_LOG(LogTemp, Warning, TEXT("Control Axis Rotated. New direction: %s, Current Offsets : (%.2f, %2f)"), *UEnum::GetValueAsString(NewDirection), LaneSwitchEndLateralOffset, LaneSwitchStartLateralOffset);
 }
 void AMRPlayerCharacter::OnInputJump(const FInputActionValue& Value)
 {
