@@ -1,12 +1,13 @@
-#include "Sys/GameMode/MRGameMode.h"
+Ôªø#include "Sys/GameMode/MRGameMode.h"
 #include "Sys/GameState/MRGameState.h"
 #include "Public/Save/MRSaveManager.h"
-#include "GameFramework/Character.h" // øπΩ√∏¶ ¿ß«ÿ ∆˜«‘
+#include "GameFramework/Character.h" // ÏòàÏãúÎ•º ÏúÑÌï¥ Ìè¨Ìï®
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 AMRGameMode::AMRGameMode()
 {
-	// ªÁøÎ«“ ±‚∫ª GameState ≈¨∑°Ω∫∏¶ ¡ˆ¡§«’¥œ¥Ÿ.
+	// ÏÇ¨Ïö©Ìï† Í∏∞Î≥∏ GameState ÌÅ¥ÎûòÏä§Î•º ÏßÄÏ†ïÌï©ÎãàÎã§.
 	GameStateClass = AMRGameState::StaticClass();
 }
 
@@ -14,20 +15,29 @@ void AMRGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ∞‘¿”¿Ã Ω√¿€µ«∏È, StartGame «‘ºˆ∏¶ »£√‚«œø© ∞‘¿” »Â∏ß¿ª Ω√¿€«’¥œ¥Ÿ.
+	// === üéµ Î∞∞Í≤ΩÏùåÏïÖ Ïû¨ÏÉù ===
+	if (BGM)
+	{
+		BGMComponent = UGameplayStatics::SpawnSound2D(this, BGM, 1.0f, 1.0f, 0.0f, nullptr, true);
+		if (BGMComponent)
+		{
+			BGMComponent->Play();
+		}
+	}
+	// Í≤åÏûÑÏù¥ ÏãúÏûëÎêòÎ©¥, StartGame Ìï®ÏàòÎ•º Ìò∏Ï∂úÌïòÏó¨ Í≤åÏûÑ ÌùêÎ¶ÑÏùÑ ÏãúÏûëÌï©ÎãàÎã§.
 	StartGame();
 
-	// TODO: ƒ≥∏Ø≈Õ¿« OnDeath µ®∏Æ∞‘¿Ã∆Æ∏¶ PlayerDied «‘ºˆø° πŸ¿Œµ˘«œ¥¬ ∑Œ¡˜¿Ã « ø‰«’¥œ¥Ÿ.
+	// TODO: Ï∫êÎ¶≠ÌÑ∞Ïùò OnDeath Îç∏Î¶¨Í≤åÏù¥Ìä∏Î•º PlayerDied Ìï®ÏàòÏóê Î∞îÏù∏Îî©ÌïòÎäî Î°úÏßÅÏù¥ ÌïÑÏöîÌï©ÎãàÎã§.
 	// ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
 	// if (PlayerCharacter) { PlayerCharacter->OnDeath.AddDynamic(this, &AMRGameMode::PlayerDied); }
 }
 
 void AMRGameMode::AddScore(int32 ScoreToAdd)
 {
-	// 1. '¿¸±§∆«'¿Œ GameState∏¶ ∞°¡Æø…¥œ¥Ÿ.
+	// 1. 'Ï†ÑÍ¥ëÌåê'Ïù∏ GameStateÎ•º Í∞ÄÏ†∏ÏòµÎãàÎã§.
 	if (AMRGameState* GS = GetGameState<AMRGameState>())
 	{
-		// 2. GameState¿« ¡°ºˆ ∫Ø∞Ê «‘ºˆ∏¶ »£√‚«œø© ∞™¿ª æ˜µ•¿Ã∆Æ«’¥œ¥Ÿ.
+		// 2. GameStateÏùò Ï†êÏàò Î≥ÄÍ≤Ω Ìï®ÏàòÎ•º Ìò∏Ï∂úÌïòÏó¨ Í∞íÏùÑ ÏóÖÎç∞Ïù¥Ìä∏Ìï©ÎãàÎã§.
 		GS->AddScore(ScoreToAdd);
 	}
 }
@@ -43,16 +53,16 @@ void AMRGameMode::StartGame()
 {
 	if (AMRGameState* GS = GetGameState<AMRGameState>())
 	{
-		// 1. ∞‘¿” ªÛ≈¬∏¶ 'InProgress'∑Œ ∫Ø∞Ê«œ∂Û∞Ì GameStateø° ∏Ì∑…«’¥œ¥Ÿ.
+		// 1. Í≤åÏûÑ ÏÉÅÌÉúÎ•º 'InProgress'Î°ú Î≥ÄÍ≤ΩÌïòÎùºÍ≥† GameStateÏóê Î™ÖÎ†πÌï©ÎãàÎã§.
 		GS->SetCurrentState(EMRGameState::InProgress);
 
-		// 2. ≥≠¿Ãµµ ªÛΩ¬ ≈∏¿Ã∏”∏¶ Ω√¿€«’¥œ¥Ÿ.
+		// 2. ÎÇúÏù¥ÎèÑ ÏÉÅÏäπ ÌÉÄÏù¥Î®∏Î•º ÏãúÏûëÌï©ÎãàÎã§.
 		GetWorld()->GetTimerManager().SetTimer(
 			IncreaseDifficultyTimerHandle,
 			this,
 			&AMRGameMode::IncreaseDifficulty,
 			TimeBetweenDifficultyIncrease,
-			true // ∑Á«Œ
+			true // Î£®Ìïë
 		);
 	}
 }
@@ -61,18 +71,18 @@ void AMRGameMode::EndGame()
 {
 	if (AMRGameState* GS = GetGameState<AMRGameState>())
 	{
-		// 1. ∞‘¿” ªÛ≈¬∏¶ 'GameOver'∑Œ ∫Ø∞Ê«œ∂Û∞Ì GameStateø° ∏Ì∑…«’¥œ¥Ÿ.
+		// 1. Í≤åÏûÑ ÏÉÅÌÉúÎ•º 'GameOver'Î°ú Î≥ÄÍ≤ΩÌïòÎùºÍ≥† GameStateÏóê Î™ÖÎ†πÌï©ÎãàÎã§.
 		GS->SetCurrentState(EMRGameState::GameOver);
 
-		// 2. ¥ı ¿ÃªÛ « ø‰ æ¯¥¬ ≈∏¿Ã∏”µÈ¿ª ¡§¡ˆΩ√≈µ¥œ¥Ÿ.
+		// 2. Îçî Ïù¥ÏÉÅ ÌïÑÏöî ÏóÜÎäî ÌÉÄÏù¥Î®∏Îì§ÏùÑ Ï†ïÏßÄÏãúÌÇµÎãàÎã§.
 		GetWorld()->GetTimerManager().ClearTimer(IncreaseDifficultyTimerHandle);
 
-		// TODO: ∞‘¿” ø¿πˆ UI∏¶ ∂ÁøÏ∞≈≥™, «√∑π¿ÃæÓ ¿‘∑¬¿ª ∏∑¥¬ µÓ¿« ∑Œ¡˜¿ª √≥∏Æ«’¥œ¥Ÿ.
+		// TODO: Í≤åÏûÑ Ïò§Î≤Ñ UIÎ•º ÎùÑÏö∞Í±∞ÎÇò, ÌîåÎ†àÏù¥Ïñ¥ ÏûÖÎ†•ÏùÑ ÎßâÎäî Îì±Ïùò Î°úÏßÅÏùÑ Ï≤òÎ¶¨Ìï©ÎãàÎã§.
 		
 		UMRSaveManager* SaveManager = GetGameInstance()->GetSubsystem<UMRSaveManager>();
 		if (SaveManager)
 		{
-			// √÷∞Ì ¡°ºˆ ∞ªΩ≈ Ω√ø°∏∏ ¿˙¿Â
+			// ÏµúÍ≥† Ï†êÏàò Í∞±Ïã† ÏãúÏóêÎßå Ï†ÄÏû•
 			if (SaveManager->UpdateHighScore(GS->GetCurrentScore()))
 			{
 				SaveManager->SaveGame();
@@ -85,13 +95,13 @@ void AMRGameMode::IncreaseDifficulty()
 {
 	if (AMRGameState* GS = GetGameState<AMRGameState>())
 	{
-		// 1. «ˆ¿Á º”µµ πË¿≤¿ª GameStateø°º≠ ¿–æÓø…¥œ¥Ÿ.
+		// 1. ÌòÑÏû¨ ÏÜçÎèÑ Î∞∞Ïú®ÏùÑ GameStateÏóêÏÑú ÏùΩÏñ¥ÏòµÎãàÎã§.
 		const float CurrentMultiplier = GS->GetGameSpeedMultiplier();
 
-		// 2. ªı∑ŒøÓ º”µµ πË¿≤¿ª ∞ËªÍ«’¥œ¥Ÿ.
+		// 2. ÏÉàÎ°úÏö¥ ÏÜçÎèÑ Î∞∞Ïú®ÏùÑ Í≥ÑÏÇ∞Ìï©ÎãàÎã§.
 		const float NewMultiplier = CurrentMultiplier + SpeedIncreaseAmount;
 
-		// 3. GameStateø° ªı∑ŒøÓ º”µµ πË¿≤¿ª º≥¡§«œ∂Û∞Ì ∏Ì∑…«’¥œ¥Ÿ.
+		// 3. GameStateÏóê ÏÉàÎ°úÏö¥ ÏÜçÎèÑ Î∞∞Ïú®ÏùÑ ÏÑ§Ï†ïÌïòÎùºÍ≥† Î™ÖÎ†πÌï©ÎãàÎã§.
 		GS->SetGameSpeedMultiplier(NewMultiplier);
 
 		UE_LOG(LogTemp, Log, TEXT("Difficulty Increased! New speed multiplier: %f"), NewMultiplier);
