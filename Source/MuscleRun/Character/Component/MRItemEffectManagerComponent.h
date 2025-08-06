@@ -33,4 +33,6 @@ public:
 		
 private:
 	int32 TempScore = 0;
+
+	FTimerHandle TimerHandle;
 };

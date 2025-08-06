@@ -643,17 +643,16 @@ void AMRPlayerCharacter::StopSlide()
 
 void AMRPlayerCharacter::GetDamaged(float DamageAmount)
 {
-
-	if (HealthComp)
-	{
-		// Implement damage logic here
-		HealthComp->GetDamage(DamageAmount);
-	}
-
 	if (bIsInvincible)
 	{
 		// 무적 상태이므로 피해 무시
 		return;
+	}
+	
+	if (HealthComp)
+	{
+		// Implement damage logic here
+		HealthComp->GetDamage(DamageAmount);
 	}
 }
 

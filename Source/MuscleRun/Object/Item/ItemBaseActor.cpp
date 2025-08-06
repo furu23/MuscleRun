@@ -30,6 +30,10 @@ AItemBaseActor::AItemBaseActor()
 	// TriggerVolume->SetBoxExtent()
 
 	// 컴포넌트 연결!
+
+	PickupEffectComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("PickupEffectComp"));
+	PickupEffectComp->SetupAttachment(RootScene);
+	PickupEffectComp->bAutoDestroy = true;
 }
 
 // Called when the game starts or when spawned
@@ -85,8 +89,6 @@ void AItemBaseActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor*
 void AItemBaseActor::DestroySelf()
 {
 	PlayVanishEffect();
-
-	Destroy();
 }
 
 void AItemBaseActor::PlayPickupEffect()
@@ -98,7 +100,25 @@ void AItemBaseActor::PlayPickupEffect()
 	
 	if (PickupEffect)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PickupEffect, GetActorLocation());
+		PickupEffectComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PickupEffect, GetActorLocation(), FRotator::ZeroRotator, true);
+		// 핸들러 3초 뒤에. Destroy Componenet로 지워버리기.
+		if (PickupEffectComp)
+		{
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				TimerHandle,
+				[this]()
+				{
+					if (PickupEffectComp)
+					{
+						PickupEffectComp->DestroyComponent();
+						PickupEffectComp = nullptr;
+					}
+				},
+				3.0f,
+				false
+			);
+		}
 	}
 }
 
