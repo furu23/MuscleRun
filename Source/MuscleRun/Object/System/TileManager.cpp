@@ -95,7 +95,7 @@ void ATileManager::Tick(float DeltaTime)
 		{
 			CurrentTrackingTile = ActiveTileGroups[CurrentTrackingTileIndex].Tile;
 			SpawnTile();
-			DestroyOldestTileGroup();
+			GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandler, this, &ATileManager::DestroyOldestTileGroup, 0.5f, false);
 		}
 	}
 
@@ -123,7 +123,6 @@ void ATileManager::Tick(float DeltaTime)
 				}
 			}
 		}
-
 	}
 }
 
