@@ -45,6 +45,12 @@ void AItemBaseActor::BeginPlay()
 	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AItemBaseActor::OnOverlapBegin);
 }
 
+void AItemBaseActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	EffectComponentDestroy();
+	Super::EndPlay(EndPlayReason);
+}
+
 void AItemBaseActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -102,23 +108,18 @@ void AItemBaseActor::PlayPickupEffect()
 	{
 		PickupEffectComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PickupEffect, GetActorLocation(), FRotator::ZeroRotator, true);
 		// 핸들러 3초 뒤에. Destroy Componenet로 지워버리기.
-		if (PickupEffectComp)
-		{
-			FTimerHandle TimerHandle;
-			GetWorld()->GetTimerManager().SetTimer(
-				TimerHandle,
-				[this]()
-				{
-					if (PickupEffectComp)
-					{
-						PickupEffectComp->DestroyComponent();
-						PickupEffectComp = nullptr;
-					}
-				},
-				3.0f,
-				false
-			);
-		}
+	}
+}
+
+void AItemBaseActor::EffectComponentDestroy()
+{
+	UE_LOG(LogTemp, Error, TEXT("ECD Func Is Here"));
+	if (PickupEffectComp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("IF Branch Is Here"));
+
+		PickupEffectComp->DestroyComponent();
+		PickupEffectComp = nullptr;
 	}
 }
 

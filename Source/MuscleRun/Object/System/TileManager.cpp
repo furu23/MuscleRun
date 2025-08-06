@@ -229,6 +229,7 @@ void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AAc
 			FTransform SpawnTransform = Point->GetComponentTransform();
 			AActor* SpawnedObject = GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTransform);
 			AMRObstacleConcrete* MovingObstacle = Cast<AMRObstacleConcrete>(SpawnedObject);
+
 			if (MovingObstacle)
 			{
 				MovingObstacle->SetDirection(TileDirection);

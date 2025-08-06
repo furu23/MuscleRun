@@ -16,7 +16,6 @@
 #include "Component/MRHealthComponent.h"
 #include <Sys/GameState/MRGameState.h>
 #include "Kismet/GameplayStatics.h"
-#include "Sys/WidgetSubSystem/MRUIManager.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 
@@ -100,7 +99,6 @@ void AMRPlayerCharacter::BeginPlay()
 
 	// GameState를 가져오고 디버그 위젯을 켭니다.
 	CachedGameState = Cast<AMRGameState>(UGameplayStatics::GetGameState(this));
-	GetWorld()->GetSubsystem<UMRUIManager>()->ToggleDebugWidget();
 
 	// 캡슐 높이 저장
 	DefaultCapsuleHalfSize = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
@@ -128,8 +126,6 @@ void AMRPlayerCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, u
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
 		CharacterState = ECharacterState::ECS_Jumping;
-		// 디버그 메시지 추가
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan, TEXT("JUMPING STATE"));
 	}
 	// 다시 땅으로 돌아오면(Walking) 달리기 상태로 변경
 	else if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
@@ -552,19 +548,7 @@ void AMRPlayerCharacter::StartSlide()
 	ForwardSpeedBeforeSlide = GetVelocity().Size();
 	CharacterState = ECharacterState::ECS_Sliding;
 
-	// --- ✨ 여기가 추가된 디버그 코드 ---
-	// 1. Crouch() 호출 전 캡슐 높이를 측정하고 흰색으로 출력합니다.
-	float BeforeHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
-	FString BeforeString = FString::Printf(TEXT("Capsule Half Height BEFORE Crouch: %.1f"), BeforeHeight);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, BeforeString);
-
 	Crouch(); // ✨ 우리가 테스트하려는 바로 그 함수입니다.
-
-	// 2. Crouch() 호출 후 캡슐 높이를 다시 측정하고 노란색으로 출력합니다.
-	float AfterHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
-	FString AfterString = FString::Printf(TEXT("Capsule Half Height AFTER Crouch: %.1f"), AfterHeight);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, AfterString);
-	// --- 디버그 코드 끝 ---
 
 	if (SlideMontage)
 	{
