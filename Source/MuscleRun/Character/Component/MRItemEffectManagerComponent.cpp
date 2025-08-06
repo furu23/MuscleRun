@@ -52,7 +52,7 @@ void UMRItemEffectManagerComponent::ApplyEffect(EItemEffectTypes ItemTypes)
 					UE_LOG(LogTemp, Log, TEXT("속도 증가! Bonus: %.1f"), MRChar->SpeedBonus);
 
 					// 일정 시간 후 다시 감소
-					FTimerHandle TimerHandle;
+					
 					FTimerDelegate TimerDel = FTimerDelegate::CreateLambda([MRChar, BonusSpeed]()
 						{
 							MRChar->SpeedBonus -= BonusSpeed;
@@ -77,7 +77,7 @@ void UMRItemEffectManagerComponent::ApplyEffect(EItemEffectTypes ItemTypes)
 					MRCharacter->bIsInvincible = true;
 
 					//(선택) 일정 시간 후 다시 죽을 수 있도록 타이머 설정
-					FTimerHandle TimerHandle;
+					
 					MRCharacter->GetWorldTimerManager().SetTimer(
 					TimerHandle, [MRCharacter]() 
 					{MRCharacter->bIsInvincible = false; }, 

@@ -22,8 +22,11 @@ void AMRGameMode::BeginPlay()
 		if (BGMComponent)
 		{
 			BGMComponent->Play();
+
+			BGMComponent->SetVolumeMultiplier(0.5f);  // 볼륨 50%
 		}
 	}
+
 	// 게임이 시작되면, StartGame 함수를 호출하여 게임 흐름을 시작합니다.
 	StartGame();
 
