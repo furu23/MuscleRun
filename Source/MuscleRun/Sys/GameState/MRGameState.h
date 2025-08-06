@@ -49,6 +49,9 @@ public:
 	void SaveHighScore();
 	void LoadHighScore();
 
+	void SaveVolumes();
+	void LoadVolumes();
+
 	// --- 델리게이트 변수들 (상태 및 점수 방송용) ---
 	
 	FOnGameScoreChanged OnScoreChanged;

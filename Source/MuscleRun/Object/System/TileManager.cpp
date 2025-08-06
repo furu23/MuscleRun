@@ -27,6 +27,7 @@ void ATileManager::BeginPlay()
 
 	// 시작 시 처음으로 타일을 생성할 Transform을 초기화해줍니다.
 	NextSpawnPointTransform = GetActorTransform();
+	NextSpawnPointTransform.SetLocation(NextSpawnPointTransform.GetLocation() - FVector(200.f, 0, 200.f));
 
 	// 설정값에 따라 미리 타일들을 스폰해둡니다.
 	for (int i = 0; i < NumInitialTiles; ++i)
@@ -132,13 +133,18 @@ void ATileManager::SpawnTile()
 		return;
 	}
 
-	ETileType TypeToSpawn = ETileType::TurnLeft; // 추후 로직 구현 DecideNextTileType()
-	TSubclassOf<AMRTile>* FoundClassPtr = TileClassMap.Find(TypeToSpawn);
 
-	if (ensure(FoundClassPtr && *FoundClassPtr))
+
+	ETileType TypeToSpawn = DecideNextTileGroup(); // 추후 로직 구현 DecideNextTileType()
+	FTileClassArray* FoundStructPtr = TileClassMap.Find(TypeToSpawn);
+
+
+	if (ensure(FoundStructPtr && FoundStructPtr->TileClasses.Num() > 0))
 	{
-		// 해당 DA 그룹에서 타일을 하나 가져옵니다.
-		TSubclassOf<AMRTile> ClassToSpawn = *FoundClassPtr;
+		const TArray<TSubclassOf<AMRTile>>& FoundClassesArray = FoundStructPtr->TileClasses;
+		int32 RandomIndex = FMath::RandRange(0, FoundClassesArray.Num() - 1);
+		TSubclassOf<AMRTile> ClassToSpawn = FoundClassesArray[RandomIndex];
+
 		AMRTile* NewTile = GetWorld()->SpawnActor<AMRTile>(ClassToSpawn, NextSpawnPointTransform);
 		if (ensure(NewTile))
 		{
@@ -205,7 +211,7 @@ void ATileManager::DestroyOldestTileGroup()
 	}
 }
 
-// Spawn Location Component 가져오고 순회해서 그 값들을 통해 오브젝트들을 생성하는 과정입니다.
+// Spawn Location Component들을 가져오고 순회해서 그 값들을 통해 오브젝트들을 생성하는 과정입니다.
 void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors)
 {
 	if (!TargetTile) return;
@@ -229,4 +235,20 @@ void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AAc
 			}
 		}
 	}
+}
+
+ETileType ATileManager::DecideNextTileGroup()
+{
+	ETileType ReturnType;
+	if (NumOfPreviousStraightTile < 3)
+	{
+		ReturnType = ETileType::Straight;
+		++NumOfPreviousStraightTile;
+	}
+	else
+	{
+		FMath::RandBool() ? ReturnType = ETileType::TurnLeft : ReturnType = ETileType::TurnRight;
+		NumOfPreviousStraightTile = 0;
+	}
+	return ReturnType;
 }

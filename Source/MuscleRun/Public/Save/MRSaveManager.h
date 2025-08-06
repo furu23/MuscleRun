@@ -29,7 +29,12 @@ public:
 	int32 GetHighScore() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Save System")
-	bool UpdateHighScore(int32 NewScore); 
+	bool UpdateHighScore(int32 NewScore);
+
+	float GetVolume() const;
+
+	bool UpdateVolume(float NewVolume) const;
+
 
 private:
 	// 현재 메모리에 로드된 SaveGame 객체의 인스턴스

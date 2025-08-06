@@ -64,3 +64,18 @@ void AMRGameState::LoadHighScore()
 		HighScore = Loaded->HighScore;
 	}
 }
+
+void AMRGameState::SaveVolumes()
+{
+	UMRSaveGame* Loaded = Cast<UMRSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("DefaultSlot"), 0));
+	if (Loaded)
+	{
+		;
+	}
+
+}
+
+void AMRGameState::LoadVolumes()
+{
+
+}

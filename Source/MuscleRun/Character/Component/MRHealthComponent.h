@@ -46,6 +46,8 @@ public:
 
 	float RetHealth() { return CurrentHealth; }
 
+	float RetMaxHealth() { return MaxHealth; }
+
 	/*
 	* 여기 델리게이트 인자를 선언해주세요!
 	*/

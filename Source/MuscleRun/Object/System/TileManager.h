@@ -5,6 +5,16 @@
 #include "Data/MRDataType.h"
 #include "TileManager.generated.h"
 
+// TArray<TSubclassOf<AMRTile>>를 담기 위한 구조체
+USTRUCT(BlueprintType)
+struct FTileClassArray
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<AMRTile>> TileClasses;
+};
+
 class AMRTile;
 class USpawnLocationComponent; // [수정] 이름 변경 반영
 
@@ -31,6 +41,9 @@ private:
 	void SpawnTile();
 	void DestroyOldestTileGroup();
 	void SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors);
+	ETileType DecideNextTileGroup();
+
+	int32 NumOfPreviousStraightTile = 0;
 
 	// --- 설정 변수들 ---
 
@@ -43,7 +56,7 @@ private:
 	// --- 타일 관련 ---
     // 디자이너가 블루프린트 에디터에서 지정할 타일 클래스들
 	UPROPERTY(EditAnywhere, Category = "Tile Management|Tile Types")
-    TMap<ETileType, TSubclassOf<AMRTile>> TileClassMap;
+    TMap<ETileType, FTileClassArray> TileClassMap;
 
 
 	// --- 상태 변수들 ---

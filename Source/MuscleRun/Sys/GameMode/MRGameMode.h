@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
@@ -12,18 +12,18 @@ class MUSCLERUN_API AMRGameMode : public AGameModeBase
 public:
 	AMRGameMode();
 
-	// --- Public API (Game World¿¡¼­ È£Ãâ) ---
-	// ´Ù¸¥ ¾×ÅÍ(Ä³¸¯ÅÍ, ¾ÆÀÌÅÛ µî)°¡ °ÔÀÓ ±ÔÄ¢¿¡ ¿µÇâÀ» ÁÖ±â À§ÇØ È£ÃâÇÏ´Â ÇÔ¼öµéÀÔ´Ï´Ù.
+	// --- Public API (Game Worldì—ì„œ í˜¸ì¶œ) ---
+	// ë‹¤ë¥¸ ì•¡í„°(ìºë¦­í„°, ì•„ì´í…œ ë“±)ê°€ ê²Œìž„ ê·œì¹™ì— ì˜í–¥ì„ ì£¼ê¸° ìœ„í•´ í˜¸ì¶œí•˜ëŠ” í•¨ìˆ˜ë“¤ìž…ë‹ˆë‹¤.
 
 	/**
-	 * @brief Á¡¼ö¸¦ Ãß°¡ÇÕ´Ï´Ù. ÄÚÀÎÀÌ³ª ¾ÆÀÌÅÛÀÌ ÀÌ ÇÔ¼ö¸¦ È£ÃâÇÕ´Ï´Ù.
-	 * @param ScoreToAdd Ãß°¡ÇÒ Á¡¼ö
+	 * @brief ì ìˆ˜ë¥¼ ì¶”ê°€í•©ë‹ˆë‹¤. ì½”ì¸ì´ë‚˜ ì•„ì´í…œì´ ì´ í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
+	 * @param ScoreToAdd ì¶”ê°€í•  ì ìˆ˜
 	 */
 	UFUNCTION(BlueprintCallable, Category = "GameMode")
 	void AddScore(int32 ScoreToAdd);
 
 	/**
-	 * @brief ÇÃ·¹ÀÌ¾î°¡ »ç¸ÁÇßÀ» ¶§ È£ÃâµÉ ÇÔ¼öÀÔ´Ï´Ù. Ä³¸¯ÅÍÀÇ OnDeath µ¨¸®°ÔÀÌÆ®¿¡ ¹ÙÀÎµùµË´Ï´Ù.
+	 * @brief í”Œë ˆì´ì–´ê°€ ì‚¬ë§í–ˆì„ ë•Œ í˜¸ì¶œë  í•¨ìˆ˜ìž…ë‹ˆë‹¤. ìºë¦­í„°ì˜ OnDeath ë¸ë¦¬ê²Œì´íŠ¸ì— ë°”ì¸ë”©ë©ë‹ˆë‹¤.
 	 */
 	void PlayerDied();
 
@@ -32,32 +32,42 @@ protected:
 
 private:
 	/**
-	 * @brief °ÔÀÓÀ» ½ÃÀÛ »óÅÂ·Î ÀüÈ¯ÇÕ´Ï´Ù. (¿¹: Ä«¿îÆ®´Ù¿î ÈÄ InProgress·Î)
+	 * @brief ê²Œìž„ì„ ì‹œìž‘ ìƒíƒœë¡œ ì „í™˜í•©ë‹ˆë‹¤. (ì˜ˆ: ì¹´ìš´íŠ¸ë‹¤ìš´ í›„ InProgressë¡œ)
 	 */
 	void StartGame();
 
 	/**
-	 * @brief °ÔÀÓÀ» Á¾·á »óÅÂ·Î ÀüÈ¯ÇÕ´Ï´Ù.
+	 * @brief ê²Œìž„ì„ ì¢…ë£Œ ìƒíƒœë¡œ ì „í™˜í•©ë‹ˆë‹¤.
 	 */
 	void EndGame();
 
 	/**
-	 * @brief ½Ã°£¿¡ µû¶ó °ÔÀÓÀÇ ³­ÀÌµµ(¼Óµµ)¸¦ Á¡ÁøÀûÀ¸·Î ¿Ã¸³´Ï´Ù.
+	 * @brief ì‹œê°„ì— ë”°ë¼ ê²Œìž„ì˜ ë‚œì´ë„(ì†ë„)ë¥¼ ì ì§„ì ìœ¼ë¡œ ì˜¬ë¦½ë‹ˆë‹¤.
 	 */
 	void IncreaseDifficulty();
 
-	// --- ¼³Á¤ º¯¼öµé ---
+	// --- ì„¤ì • ë³€ìˆ˜ë“¤ ---
 
-	// ³­ÀÌµµ°¡ »ó½ÂÇÏ±â±îÁöÀÇ ½Ã°£ °£°Ý (ÃÊ)
+	// ë‚œì´ë„ê°€ ìƒìŠ¹í•˜ê¸°ê¹Œì§€ì˜ ì‹œê°„ ê°„ê²© (ì´ˆ)
 	UPROPERTY(EditDefaultsOnly, Category = "GameMode|Difficulty")
 	float TimeBetweenDifficultyIncrease = 5.0f;
 
-	// ÇÑ ¹ø¿¡ Áõ°¡ÇÒ ¼Óµµ ¹èÀ²
+	// í•œ ë²ˆì— ì¦ê°€í•  ì†ë„ ë°°ìœ¨
 	UPROPERTY(EditDefaultsOnly, Category = "GameMode|Difficulty")
 	float SpeedIncreaseAmount = 0.1f;
 
-	// --- »óÅÂ º¯¼öµé ---
+	// --- ìƒíƒœ ë³€ìˆ˜ë“¤ ---
 
-	// ³­ÀÌµµ »ó½Â Å¸ÀÌ¸Ó¸¦ À§ÇÑ ÇÚµé
+	// ë‚œì´ë„ ìƒìŠ¹ íƒ€ì´ë¨¸ë¥¼ ìœ„í•œ í•¸ë“¤
 	FTimerHandle IncreaseDifficultyTimerHandle;
+
+	// === ðŸŽµ ë°°ê²½ìŒì•… ê´€ë ¨ ===
+
+// ì—ë””í„°ì—ì„œ ì„¤ì •í•  BGM ì‚¬ìš´ë“œ
+	UPROPERTY(EditAnywhere, Category = "GameMode|Audio")
+	USoundBase* BGM;
+
+	// ìž¬ìƒ ì œì–´ë¥¼ ìœ„í•œ ì˜¤ë””ì˜¤ ì»´í¬ë„ŒíŠ¸
+	UPROPERTY()
+	class UAudioComponent* BGMComponent;
 };
