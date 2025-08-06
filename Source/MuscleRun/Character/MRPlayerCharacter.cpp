@@ -16,7 +16,6 @@
 #include "Component/MRHealthComponent.h"
 #include <Sys/GameState/MRGameState.h>
 #include "Kismet/GameplayStatics.h"
-#include "Sys/WidgetSubSystem/MRUIManager.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 
@@ -100,7 +99,6 @@ void AMRPlayerCharacter::BeginPlay()
 
 	// GameState를 가져오고 디버그 위젯을 켭니다.
 	CachedGameState = Cast<AMRGameState>(UGameplayStatics::GetGameState(this));
-	GetWorld()->GetSubsystem<UMRUIManager>()->ToggleDebugWidget();
 
 	// 캡슐 높이 저장
 	DefaultCapsuleHalfSize = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
