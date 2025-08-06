@@ -45,6 +45,8 @@ private:
 
 	int32 NumOfPreviousStraightTile = 0;
 
+	FTimerHandle DestroyTimeHandler;
+
 	// --- 설정 변수들 ---
 
 	UPROPERTY(EditAnywhere, Category = "Tile Management|Config", meta = (ClampMin = "1"))
