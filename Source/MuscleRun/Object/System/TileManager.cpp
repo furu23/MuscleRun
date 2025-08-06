@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sys/GameState/MRGameState.h"
 #include "Character/MRPlayerCharacter.h"
+#include <GameFramework/ProjectileMovementComponent.h>
+#include <Object/Obstacle/MRObstacleConcrete.h>
 
 ATileManager::ATileManager()
 {
@@ -133,8 +135,6 @@ void ATileManager::SpawnTile()
 		return;
 	}
 
-
-
 	ETileType TypeToSpawn = DecideNextTileGroup(); // 추후 로직 구현 DecideNextTileType()
 	FTileClassArray* FoundStructPtr = TileClassMap.Find(TypeToSpawn);
 
@@ -174,7 +174,7 @@ void ATileManager::SpawnTile()
 			}
 			NewGroup.ExitDirection = LastTileExitDirection;
 
-			SpawnObjectsOnTile(NewTile, NewGroup.ContainedActors);
+			SpawnObjectsOnTile(NewTile, NewGroup.ContainedActors, LastTileExitDirection);
 
 			// TArray의 맨 뒤에 새 그룹을 추가합니다.
 			ActiveTileGroups.Add(NewGroup);
@@ -212,7 +212,7 @@ void ATileManager::DestroyOldestTileGroup()
 }
 
 // Spawn Location Component들을 가져오고 순회해서 그 값들을 통해 오브젝트들을 생성하는 과정입니다.
-void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors)
+void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors, ETrackDirection TileDirection)
 {
 	if (!TargetTile) return;
 
@@ -228,6 +228,11 @@ void ATileManager::SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AAc
 
 			FTransform SpawnTransform = Point->GetComponentTransform();
 			AActor* SpawnedObject = GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTransform);
+			AMRObstacleConcrete* MovingObstacle = Cast<AMRObstacleConcrete>(SpawnedObject);
+			if (MovingObstacle)
+			{
+				MovingObstacle->SetDirection(TileDirection);
+			}
 			//UE_LOG(LogTemp, Log, TEXT("SpawnedComponentTransform : %s, %s"), *Point->GetComponentTransform().ToString(), *Point->GetFName().ToString());
 			if (SpawnedObject)
 			{

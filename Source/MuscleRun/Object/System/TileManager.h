@@ -40,7 +40,7 @@ protected:
 private:
 	void SpawnTile();
 	void DestroyOldestTileGroup();
-	void SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors);
+	void SpawnObjectsOnTile(AMRTile* TargetTile, TArray<TObjectPtr<AActor>>& OutSpawnedActors, ETrackDirection TileDirection);
 	ETileType DecideNextTileGroup();
 
 	int32 NumOfPreviousStraightTile = 0;

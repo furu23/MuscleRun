@@ -212,6 +212,8 @@ void AMRPlayerCharacter::OnDeath()
 }
 
 // Called every frame
+// AMRPlayerCharacter.cpp
+
 void AMRPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -221,171 +223,130 @@ void AMRPlayerCharacter::Tick(float DeltaTime)
 	{
 		double NewMultiplier = CachedGameState->GetGameSpeedMultiplier();
 
-		GetCharacterMovement()->MaxWalkSpeed = (BASE_SPEED_MAX + SpeedBonus) * NewMultiplier;
+		// 1. 평소 달리기 속도를 계산합니다.
+		const float NewMaxSpeed = (BASE_SPEED_MAX + SpeedBonus) * NewMultiplier;
+		GetCharacterMovement()->MaxWalkSpeed = NewMaxSpeed;
+
+		// 2. ✨ 웅크렸을 때의 속도도 똑같은 값으로 설정하여 속도 저하를 방지합니다.
+		GetCharacterMovement()->MaxWalkSpeedCrouched = NewMaxSpeed;
+
+		// 나머지 값들도 업데이트합니다.
 		GetCharacterMovement()->GravityScale = BASE_GRAVITY_SCALE * NewMultiplier * NewMultiplier;
 		GetCharacterMovement()->JumpZVelocity = BASE_JUMP_VELOCITY * NewMultiplier;
 		GetCharacterMovement()->MaxAcceleration = BASE_MAX_ACCELERATION * NewMultiplier;
 	}
 
-	// 슬라이딩 로직
-	/*
-	if (CurrentCharacterState = ECharacterState::Slide)
-	{
-		GetCharacterMovement()->GroundFriction = 0.f;
-		GetCharacterMovement()->Velocity *= 0.98f;
-	}
-	else
-	{
-		GetCharacterMovement()->GroundFriction = 8.f;
-	}
-	*/
-
-
+	// 2. 코너링 로직을 실행합니다. (코너링 중에는 다른 이동 로직을 막기 위해 return 처리)
 	if (bIsTurningNow)
 	{
-		// Alpha 값을 시간에 따라 0에서 1로 증가시킨다.
 		TurnAlpha += DeltaTime / TurnDuration;
 		TurnAlpha = FMath::Min(TurnAlpha, 1.0f);
 
-		// 시작 Transform과 끝 Transform 사이를 부드럽게 보간(Lerp/Slerp)한다.
 		const FVector NewLocation = FMath::Lerp(TurnStartTransform.GetLocation(), TurnEndTransform.GetLocation(), TurnAlpha);
 		const FQuat NewRotation = FQuat::Slerp(TurnStartTransform.GetRotation(), TurnEndTransform.GetRotation(), TurnAlpha);
-
 		SetActorLocationAndRotation(NewLocation, NewRotation);
 
-		// 회전 완료 처리
 		if (TurnAlpha >= 1.0f)
 		{
 			bIsTurningNow = false;
-
 			FVector NewForwardVector = GetActorForwardVector();
 			GetCharacterMovement()->Velocity = NewForwardVector * ForwardSpeedBeforeTurn;
 		}
-
-		// 자동 회전 중에는 아래의 일반 이동 로직을 실행하지 않고 즉시 종료한다.
-		return;
+		return; // 코너링 중에는 아래 로직을 실행하지 않음
 	}
 
-	// 방향을 정의하고, 현재 앞방향으로 이동합니다.
+	// 3. 전진 이동 로직을 실행합니다. (슬라이딩 중에도 앞으로 나아가도록 수정됨)
 	FVector ForwardDirection = FVector::ZeroVector;
 	switch (CurrentTrackDirection)
 	{
-	case ETrackDirection::North: ForwardDirection = FVector::ForwardVector; break; // +X
-	case ETrackDirection::East:  ForwardDirection = FVector::RightVector;   break; // +Y
-	case ETrackDirection::South: ForwardDirection = -FVector::ForwardVector; break; // -X
-	case ETrackDirection::West:  ForwardDirection = -FVector::RightVector;  break; // -Y
+	case ETrackDirection::North: ForwardDirection = FVector::ForwardVector; break;
+	case ETrackDirection::East:  ForwardDirection = FVector::RightVector;   break;
+	case ETrackDirection::South: ForwardDirection = -FVector::ForwardVector; break;
+	case ETrackDirection::West:  ForwardDirection = -FVector::RightVector;  break;
 	}
-
 	AddMovementInput(ForwardDirection, 1.0f);
 
-	// 레인을 변경하는 로직입니다. bIsSwitchingLane 참일때만 동작합니다.
+
+	// --- ✨ 여기가 구조가 변경된 핵심 부분 ---
+
+	// 4. 레인 '변경 중'일 때의 로직
 	if (bIsSwitchingLane)
 	{
 		LaneSwitchAlpha += DeltaTime / LaneSwitchDuration;
 		LaneSwitchAlpha = FMath::Min(LaneSwitchAlpha, 1.0f);
 
-		// 이동할 값을 시간에 따른 LaneSwitchAlpha에 따라 증가시키며 위치를 보정시킵니다.
 		const float NewLateralOffset = FMath::Lerp(LaneSwitchStartLateralOffset, LaneSwitchEndLateralOffset, LaneSwitchAlpha);
-
 		FVector NewLocation = GetActorLocation();
 
-		// 현재 트랙 방향을 switch로 분기하여 고정 오프셋에 Lerp 값을 더합니다.
 		switch (CurrentTrackDirection)
 		{
-		case ETrackDirection::North: // 전진축: +X, 측면축: Y
-		case ETrackDirection::South: // 전진축: -X, 측면축: Y
-			NewLocation.Y = FixedLaneOffset + ((CurrentTrackDirection == ETrackDirection::North) ? NewLateralOffset : -NewLateralOffset);
+		case ETrackDirection::North:
+			NewLocation.Y = FixedLaneOffset + NewLateralOffset;
 			break;
-		case ETrackDirection::East:  // 전진축: +Y, 측면축: X
-		case ETrackDirection::West:  // 전진축: -Y, 측면축: X
-			NewLocation.X = FixedLaneOffset + ((CurrentTrackDirection == ETrackDirection::West) ? NewLateralOffset : -NewLateralOffset);
+		case ETrackDirection::South:
+			NewLocation.Y = FixedLaneOffset - NewLateralOffset;
+			break;
+		case ETrackDirection::East:
+			NewLocation.X = FixedLaneOffset - NewLateralOffset;
+			break;
+		case ETrackDirection::West:
+			NewLocation.X = FixedLaneOffset + NewLateralOffset;
 			break;
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Movement Is Here, NewLateral : %.2f, Current Start Offset : %.2f, Current End Offset : %.2f"), NewLateralOffset, LaneSwitchStartLateralOffset, LaneSwitchEndLateralOffset);
 		SetActorLocation(NewLocation);
 
-		// 레인 변경 완료 시 넘었을지도 모르는 값을 보정해줍니다. (Min 함수 때문에 실행될 일은 매우 없습니다)
 		if (LaneSwitchAlpha >= 1.0f)
 		{
 			bIsSwitchingLane = false;
 			CurrentLane = TargetLane;
-
 			// 최종 위치 보정
-			NewLocation = GetActorLocation();
-
-			switch (CurrentTrackDirection)
-			{
-			case ETrackDirection::North:
-				NewLocation.Y = FixedLaneOffset + LaneSwitchEndLateralOffset;
-				break;
-			case ETrackDirection::South:
-				NewLocation.Y = FixedLaneOffset - LaneSwitchEndLateralOffset;
-				break;
-			case ETrackDirection::East:
-				NewLocation.X = FixedLaneOffset - LaneSwitchEndLateralOffset;
-				break;
-			case ETrackDirection::West:
-				NewLocation.X = FixedLaneOffset + LaneSwitchEndLateralOffset;
-				break;
-			}
-			SetActorLocation(NewLocation);
+			// (위치를 한번 더 설정하는 대신, 아래의 '레인 수호' 로직이 처리하도록 맡겨도 좋습니다)
 		}
+	}
+	// 5. 레인 변경 중이 '아닐' 때의 "레인 절대 수호" 로직
+	else
+	{
+		const int32 LogicalLaneIndex = static_cast<int32>(CurrentLane) - 1;
+		const float TargetLateralOffset = LogicalLaneIndex * LaneWidth;
+		FVector CorrectedLocation = GetActorLocation();
+		bool bNeedsCorrection = false;
 
-		// --- 여기가 새로운 "레인 절대 수호" 로직 (개선 버전) ---
-	// 레인을 바꾸는 중이 아닐 때만 이 로직을 실행하여, 캐릭터가 레인을 벗어나는 것을 방지합니다.
-		if (!bIsSwitchingLane)
+		switch (CurrentTrackDirection)
 		{
-			// 1. 현재 레인에 맞는 목표 옆 방향 오프셋을 계산합니다.
-			const int32 LogicalLaneIndex = static_cast<int32>(CurrentLane) - 1; // Center(1)->0, Left(0)->-1, Right(2)->1
-			const float TargetLateralOffset = LogicalLaneIndex * LaneWidth;
-
-			FVector CorrectedLocation = GetActorLocation();
-			bool bNeedsCorrection = false;
-
-			// 2. 현재 트랙 방향에 따라 목표 위치를 설정하고, 보정이 필요한지 확인합니다.
-			//    FMath::IsNearlyEqual의 허용 오차(Tolerance)를 1.0f 정도로 주어 불필요한 수정을 방지합니다.
-			switch (CurrentTrackDirection)
+		case ETrackDirection::North:
+			if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset + TargetLateralOffset, 1.0f))
 			{
-			case ETrackDirection::North:
-				if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset + TargetLateralOffset, 1.0f))
-				{
-					CorrectedLocation.Y = FixedLaneOffset + TargetLateralOffset;
-					bNeedsCorrection = true;
-				}
-				break;
-			case ETrackDirection::South:
-				if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset - TargetLateralOffset, 1.0f))
-				{
-					CorrectedLocation.Y = FixedLaneOffset - TargetLateralOffset;
-					bNeedsCorrection = true;
-				}
-				break;
-			case ETrackDirection::East:
-				if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset - TargetLateralOffset, 1.0f))
-				{
-					CorrectedLocation.X = FixedLaneOffset - TargetLateralOffset;
-					bNeedsCorrection = true;
-				}
-				break;
-			case ETrackDirection::West:
-				if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset + TargetLateralOffset, 1.0f))
-				{
-					CorrectedLocation.X = FixedLaneOffset + TargetLateralOffset;
-					bNeedsCorrection = true;
-				}
-				break;
+				CorrectedLocation.Y = FixedLaneOffset + TargetLateralOffset;
+				bNeedsCorrection = true;
 			}
-
-			// 3. 위치 보정이 필요하다고 판단되면, 물리 상태를 리셋하며 강제로 위치를 변경합니다.
-			if (bNeedsCorrection)
+			break;
+		case ETrackDirection::South:
+			if (!FMath::IsNearlyEqual(CorrectedLocation.Y, FixedLaneOffset - TargetLateralOffset, 1.0f))
 			{
-				// SetActorLocation의 마지막 인자를 ETeleportType::TeleportPhysics로 설정합니다.
-				// 이렇게 하면 위치를 옮기면서 물리적 반작용으로 얻은 옆 방향 속도를 리셋하여,
-				// 계속해서 옆으로 밀려나는 현상을 방지하는 핵심적인 역할을 합니다.
-				SetActorLocation(CorrectedLocation, false, nullptr, ETeleportType::TeleportPhysics);
+				CorrectedLocation.Y = FixedLaneOffset - TargetLateralOffset;
+				bNeedsCorrection = true;
 			}
+			break;
+		case ETrackDirection::East:
+			if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset - TargetLateralOffset, 1.0f))
+			{
+				CorrectedLocation.X = FixedLaneOffset - TargetLateralOffset;
+				bNeedsCorrection = true;
+			}
+			break;
+		case ETrackDirection::West:
+			if (!FMath::IsNearlyEqual(CorrectedLocation.X, FixedLaneOffset + TargetLateralOffset, 1.0f))
+			{
+				CorrectedLocation.X = FixedLaneOffset + TargetLateralOffset;
+				bNeedsCorrection = true;
+			}
+			break;
 		}
-		// --- 여기까지가 새로운 로직 ---
+
+		if (bNeedsCorrection)
+		{
+			SetActorLocation(CorrectedLocation, false, nullptr, ETeleportType::TeleportPhysics);
+		}
 	}
 }
 
@@ -590,7 +551,20 @@ void AMRPlayerCharacter::StartSlide()
 
 	ForwardSpeedBeforeSlide = GetVelocity().Size();
 	CharacterState = ECharacterState::ECS_Sliding;
-	Crouch();
+
+	// --- ✨ 여기가 추가된 디버그 코드 ---
+	// 1. Crouch() 호출 전 캡슐 높이를 측정하고 흰색으로 출력합니다.
+	float BeforeHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	FString BeforeString = FString::Printf(TEXT("Capsule Half Height BEFORE Crouch: %.1f"), BeforeHeight);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, BeforeString);
+
+	Crouch(); // ✨ 우리가 테스트하려는 바로 그 함수입니다.
+
+	// 2. Crouch() 호출 후 캡슐 높이를 다시 측정하고 노란색으로 출력합니다.
+	float AfterHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	FString AfterString = FString::Printf(TEXT("Capsule Half Height AFTER Crouch: %.1f"), AfterHeight);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, AfterString);
+	// --- 디버그 코드 끝 ---
 
 	if (SlideMontage)
 	{
@@ -598,8 +572,7 @@ void AMRPlayerCharacter::StartSlide()
 	}
 
 	// 정해진 시간 후 자동으로 일어서도록 StopSlide 함수를 예약합니다.
-	GetWorld()->GetTimerManager().SetTimer(SlideTimeHandler, this, 
-		&AMRPlayerCharacter::StopSlide, SlideDuration, false);
+	GetWorld()->GetTimerManager().SetTimer(SlideTimeHandler, this, &AMRPlayerCharacter::StopSlide, SlideDuration, false);
 }
 
 

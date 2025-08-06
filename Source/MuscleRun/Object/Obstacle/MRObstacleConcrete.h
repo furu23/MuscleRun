@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "MRObsrtuctBase.h"
+#include "Data/MRDataType.h"
 #include "MRObstacleConcrete.generated.h"
+
 
 class UProjectileMovementComponent;
 
@@ -15,6 +17,12 @@ class MUSCLERUN_API AMRObstacleConcrete : public AMRObsrtuctBase
 
 public:
 	AMRObstacleConcrete();
+
+	/** 스폰될 때 외부(타일 매니저 등)에서 호출하여 이동 방향을 설정하는 함수입니다. */
+	void SetMovementDirection(const FVector& Direction);
+
+	void SetDirection(const ETrackDirection TileDirection);
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -29,6 +37,7 @@ protected:
 
 private:
 	FVector StartLocation;
+
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float MoveDistance = 500.0f;
 };

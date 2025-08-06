@@ -17,6 +17,7 @@ AMRObstacleConcrete::AMRObstacleConcrete()
 	ProjectileMovementComponent->Bounciness = 1.0f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.f;
 	ProjectileMovementComponent->bRotationFollowsVelocity = false;
+	ProjectileMovementComponent->UpdatedComponent = MeshComponent;
 
 	// 움직이는 장애물 하늘로 솓구치는 버그수정 로직
 	// 1. 움직임을 특정 평면에 구속하는 기능을 활성화합니다.
@@ -26,11 +27,52 @@ AMRObstacleConcrete::AMRObstacleConcrete()
 	ProjectileMovementComponent->SetPlaneConstraintNormal(FVector(0.f, 0.f, 1.f));
 }
 
+void AMRObstacleConcrete::SetMovementDirection(const FVector& Direction)
+{
+	if (ProjectileMovementComponent)
+	{
+		// 정규화된 방향 벡터에 속도를 곱해 최종 속도를 설정합니다.
+		ProjectileMovementComponent->Velocity = Direction.GetSafeNormal() * ProjectileMovementComponent->InitialSpeed;
+	}
+}
+
+void AMRObstacleConcrete::SetDirection(const ETrackDirection TileDirection)
+{
+	// ProjectileMovementComponent가 유효한지 먼저 확인합니다.
+	if (!ProjectileMovementComponent)
+	{
+		return;
+	}
+
+	FVector SidewaysAxis = FVector::ZeroVector;
+
+	// 넘겨받은 타일의 방향에 따라 장애물이 움직일 '좌우' 축을 결정합니다.
+	switch (TileDirection)
+	{
+	case ETrackDirection::North:
+	case ETrackDirection::South:
+		// 길이 남북(X축) 방향일 때, 장애물의 좌우는 월드 Y축이 됩니다.
+		SidewaysAxis = FVector(0.f, 1.f, 0.f);
+		break;
+	case ETrackDirection::West:
+	case ETrackDirection::East:
+		// 길이 동서(Y축) 방향일 때, 장애물의 좌우는 월드 X축이 됩니다.
+		SidewaysAxis = FVector(1.f, 0.f, 0.f);
+		break;
+	default:
+		// 예외 처리: 혹시 모를 상황에 대비해 Y축을 기본값으로 둡니다.
+		SidewaysAxis = FVector(0.f, 1.f, 0.f);
+		break;
+	}
+
+	// 계산된 축을 기준으로 속도를 설정합니다.
+	ProjectileMovementComponent->Velocity = SidewaysAxis.GetSafeNormal() * ProjectileMovementComponent->InitialSpeed;
+}
+
 void AMRObstacleConcrete::BeginPlay()
 {
 	Super::BeginPlay();
 	StartLocation = GetActorLocation();
-	ProjectileMovementComponent->Velocity = FVector(0.0f, 1.0f, 0.0f) * ProjectileMovementComponent->InitialSpeed;
 }
 
 void AMRObstacleConcrete::Tick(float DeltaTime)
