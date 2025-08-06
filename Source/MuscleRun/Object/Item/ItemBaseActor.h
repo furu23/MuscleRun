@@ -27,6 +27,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	virtual void Tick(float DeltaTime) override;
 
 private:
@@ -58,11 +60,15 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* VanishEffect;
 
+	FTimerHandle TimerHandle;
+
+
 protected:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void DestroySelf();  // 자기 자신(this)을 파괴한다.
 	void PlayPickupEffect();
+	void EffectComponentDestroy();
 	void PlayVanishEffect();
 };
